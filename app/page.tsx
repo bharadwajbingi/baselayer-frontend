@@ -163,8 +163,8 @@ export default function Home() {
             Ready to Build Something Amazing?
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Join thousands of developers who've accelerated their projects with
-            our boilerplates.
+            Join thousands of developers who&apos;ve accelerated their projects
+            with our boilerplates.
           </p>
           <Button asChild size="lg" className="text-lg px-8 py-6">
             <Link href="/dashboard" className="flex items-center gap-2">

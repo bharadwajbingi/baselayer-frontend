@@ -65,7 +65,8 @@ export default function GeneratePage() {
             Generating Your Project
           </h1>
           <p className="text-lg text-muted-foreground">
-            We're creating your custom boilerplate with the selected features.
+            We&apos;re creating your custom boilerplate with the selected
+            features.
           </p>
         </div>
 

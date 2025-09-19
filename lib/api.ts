@@ -4,9 +4,9 @@ export async function generateProject(payload: {
   features: string[];
 }) {
   return {
-    id: "demo-123",
     zipUrl: "/dummy/project.zip",
     manifest: {
+      id: "demo-123", // move id here
       stack: payload.stack,
       version: payload.version,
       features: payload.features,

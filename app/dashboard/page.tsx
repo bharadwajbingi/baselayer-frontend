@@ -38,18 +38,22 @@ import {
   BarChart,
 } from "lucide-react";
 
+// --- Types ---
+type ProjectInput = {
+  stack: string;
+  version: string;
+  features: string[];
+  userId?: string; // ✅ Add userId as optional
+};
+
+// --- Constants ---
 const stacks = [
-  // Frontend Frameworks
   { value: "nextjs-ts", label: "Next.js + TypeScript" },
-  { value: "nextjs-js", label: "Next.js + JavaScript" }, // for beginners
+  { value: "nextjs-js", label: "Next.js + JavaScript" },
   { value: "react-ts", label: "React + TypeScript" },
   { value: "vue-ts", label: "Vue + TypeScript" },
   { value: "svelte-ts", label: "Svelte + TypeScript" },
-
-  // Fullstack Bundles
   { value: "mern", label: "MERN (Mongo + Express + React + Node)" },
-
-  // Backend Frameworks
   { value: "node-express", label: "Node.js + Express (Backend)" },
   { value: "fastapi", label: "Python + FastAPI (Backend)" },
 ];
@@ -57,7 +61,6 @@ const stacks = [
 const versions = [{ value: "stable", label: "Stable (Latest)" }];
 
 const availableFeatures = [
-  // --- Security & Auth ---
   {
     id: "auth",
     title: "Authentication",
@@ -66,8 +69,6 @@ const availableFeatures = [
     category: "Security",
     icon: <Shield className="h-4 w-4" />,
   },
-
-  // --- Payments ---
   {
     id: "billing",
     title: "Billing & Payments",
@@ -76,8 +77,6 @@ const availableFeatures = [
     category: "Payments",
     icon: <CreditCard className="h-4 w-4" />,
   },
-
-  // --- Database & API ---
   {
     id: "database",
     title: "Database Setup",
@@ -92,8 +91,6 @@ const availableFeatures = [
     category: "Backend",
     icon: <Zap className="h-4 w-4" />,
   },
-
-  // --- Communication ---
   {
     id: "email",
     title: "Email Service",
@@ -109,8 +106,6 @@ const availableFeatures = [
     category: "Communication",
     icon: <Bell className="h-4 w-4" />,
   },
-
-  // --- Management & Dashboards ---
   {
     id: "admin",
     title: "Admin Dashboard",
@@ -125,8 +120,6 @@ const availableFeatures = [
     category: "Content",
     icon: <FileText className="h-4 w-4" />,
   },
-
-  // --- Insights ---
   {
     id: "analytics",
     title: "Analytics",
@@ -141,8 +134,6 @@ const availableFeatures = [
     category: "Insights",
     icon: <Activity className="h-4 w-4" />,
   },
-
-  // --- DevOps ---
   {
     id: "ci-cd",
     title: "CI/CD Setup",
@@ -159,10 +150,11 @@ const availableFeatures = [
   },
 ];
 
+// --- Component ---
 export default function Dashboard() {
-  const { isLoaded, isSignedIn, userId } = useAuth();
-  const [stack, setStack] = useState("nextjs-ts");
-  const [version, setVersion] = useState("14");
+  const { isLoaded, userId } = useAuth();
+  const [stack, setStack] = useState<string>("nextjs-ts");
+  const [version, setVersion] = useState<string>("stable");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const router = useRouter();
 
@@ -176,12 +168,14 @@ export default function Dashboard() {
 
   const handleGenerate = async () => {
     try {
-      const response = await generateProject({
+      const projectData: ProjectInput = {
         stack,
         version,
         features: selectedFeatures,
         userId: userId || "anonymous-user",
-      });
+      };
+
+      const response = await generateProject(projectData);
 
       toast.success("Project generated successfully!");
       router.push(`/result/${response.manifest.id}`);
@@ -191,7 +185,6 @@ export default function Dashboard() {
     }
   };
 
-  // Show loading state while Clerk is initializing
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-background">
@@ -205,10 +198,10 @@ export default function Dashboard() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar showAuth={true} />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
