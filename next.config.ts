@@ -2,9 +2,6 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  devIndicators: {
-    appIsrStatus: false, // hides that bottom-left "N" icon
-  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
