@@ -1,52 +1,49 @@
 # Baselayer Frontend
 
-Baselayer is a SaaS boilerplate generator 🚀.  
-The **frontend** is built with **Next.js 14 (App Router) + TypeScript + TailwindCSS + shadcn/ui**.  
-It provides the user interface where developers can select their **tech stack, features, and versions**, then generate a ready-to-use boilerplate codebase.
+**Baselayer** is a SaaS Boilerplate Generator that allows developers to **select tech stacks, features, and versions**, then instantly generate a **ready-to-use codebase** with mini documentation.
+
+This repo contains the **frontend** built with **Next.js + TypeScript + TailwindCSS**.
 
 ---
 
-## 📌 Features
+## 🚀 Tech Highlights
 
-- ⚡ Built with Next.js 14 + App Router
-- 🎨 TailwindCSS + shadcn/ui for modern UI
-- 🌗 Light/Dark mode toggle
-- 🔐 Authentication (Clerk – placeholder)
-- 📦 Dashboard where users choose:
-  - Tech stack (e.g., Next.js, MERN, etc.)
-  - Features (e.g., Auth, Billing, Dashboard, File Upload…)
-  - Versions (stable by default, but configurable)
-- ⏳ Loading animation while generating code
-- 📥 Downloadable ZIP of the generated boilerplate
-- 📄 Auto-generated mini documentation with the code
+- **Next.js 14 (App Router)** + **TypeScript**
+- **TailwindCSS + shadcn/ui** for modern UI
+- **Light/Dark mode** toggle
+- **Dashboard** where users pick:
+  - Tech stack (e.g., Next.js, MERN)
+  - Features (Auth, Billing, Dashboard…)
+  - Versions (default stable, customizable)
+- **Downloadable ZIP** + **auto-docs**
 
 ---
 
-## 🛠️ Tech Stack
-
-- **Framework:** Next.js 14 (App Router)
-- **Language:** TypeScript
-- **Styling:** TailwindCSS + shadcn/ui
-- **Auth:** Clerk (planned)
-- **State Management:** React hooks (for now)
-- **Deployment:** Vercel (recommended)
-
----
-
-## 📂 Folder Structure (planned)
+## 📂 Folder Structure
 
 ```bash
 frontend/
- ├── app/                # Next.js App Router pages
- │   ├── layout.tsx      # Root layout
- │   ├── page.tsx        # Landing page
- │   ├── dashboard/      # User dashboard
- │   └── api/            # (Optional) API routes
- ├── components/         # Reusable UI components
- ├── hooks/              # Custom hooks
- ├── lib/                # Utils/helpers
- ├── public/             # Static assets
- ├── styles/             # Global styles
- ├── .env.local          # Env variables
- └── README.md
+ ├── app/          # Pages (Landing, Dashboard)
+ ├── components/   # Reusable UI
+ ├── hooks/        # Custom React hooks
+ ├── lib/          # Utilities
+ ├── public/       # Static assets
+ └── styles/       # Global styles
+🔑 Why This Project Stands Out
+Shows real SaaS architecture thinking
+
+Covers modern frontend stack (Next.js 14, TS, Tailwind)
+
+Designed to integrate with backend + AI code generator
+
+Recruiter-friendly: clear product, clean UI, practical use-case
+
+▶️ Quick Start
+bash
+Copy code
+npm install
+npm run dev
+Open 👉 http://localhost:3000
+
+📌 Status: In progress — landing page, dashboard UI, and feature selection flow.
 ```
