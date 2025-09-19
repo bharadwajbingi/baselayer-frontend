@@ -1,6 +1,6 @@
-# Baselayer Frontend
+# BoilerGen Frontend
 
-**Baselayer** is a SaaS Boilerplate Generator that allows developers to **select tech stacks, features, and versions**, then instantly generate a **ready-to-use codebase** with mini documentation.
+**BoilerGen** is a SaaS Boilerplate Generator that allows developers to **select tech stacks, features, and versions**, then instantly generate a **ready-to-use codebase** with mini documentation.
 
 This repo contains the **frontend** built with **Next.js + TypeScript + TailwindCSS**.
 
