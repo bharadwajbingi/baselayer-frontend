@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Bell, Box, GitBranch, Activity } from "lucide-react";
+import LoadingAnimation from "@components/loading-animation";
 
 import {
   Card,
@@ -156,6 +157,16 @@ export default function Dashboard() {
   const [version, setVersion] = useState<string>("stable");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const router = useRouter();
+  // Generation simulation states
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+  const generationSteps = [
+    "Initializing project structure...",
+    "Installing dependencies...",
+    "Configuring selected features...",
+    "Finalizing setup...",
+  ];
 
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures((prev) =>
@@ -166,22 +177,41 @@ export default function Dashboard() {
   };
 
   const handleGenerate = async () => {
-    try {
-      const projectData: ProjectInput = {
-        stack,
-        version,
-        features: selectedFeatures,
-        userId: userId || "anonymous-user",
-      };
-
-      const response = await generateProject(projectData);
-
-      toast.success("Project generated successfully!");
-      router.push(`/result/${response.manifest.id}`);
-    } catch (error) {
-      toast.error("Failed to generate project. Please try again.");
-      console.error("Generation error:", error);
+    if (selectedFeatures.length === 0) {
+      toast.error("Select at least one feature!");
+      return;
     }
+
+    setIsGenerating(true);
+    setProgress(0);
+    setCurrentStep(0);
+
+    const generationDuration = 5000; // total animation duration in ms
+    const stepDuration = generationDuration / generationSteps.length;
+
+    // Simulate steps and progress
+    for (let i = 0; i < generationSteps.length; i++) {
+      setCurrentStep(i);
+
+      const stepStart = (i / generationSteps.length) * 100;
+      const stepEnd = ((i + 1) / generationSteps.length) * 100;
+
+      const stepInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev < stepEnd) return prev + 1;
+          clearInterval(stepInterval);
+          return prev;
+        });
+      }, stepDuration / (stepEnd - stepStart));
+
+      await new Promise((resolve) => setTimeout(resolve, stepDuration));
+    }
+
+    // After animation, just show success toast for now
+    toast.success("Project generation simulated successfully!");
+    setIsGenerating(false);
+    setProgress(0);
+    setCurrentStep(0);
   };
 
   if (!isLoaded) {
@@ -199,21 +229,21 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background lg:fixed">
       <Navbar showAuth={true} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Project Generator
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Configure your project settings and select the features you need.
-          </p>
-        </div>
-
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:pl-20 lg:ml-10 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Configuration Panel */}
-          <div className="lg:col-span-1 space-y-6">
+          {/* Configuration Panel (Sticky on large screens) */}
+          <div className="lg:col-span-1 space-y-6 lg:sticky top-0 lg:mt-20">
+            <div className="mb-6 pl-1">
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Project Generator
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Configure your project settings and select the features you
+                need.
+              </p>
+            </div>
             {/* Stack Selector */}
             <Card>
               <CardHeader>
@@ -261,8 +291,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Generate Button */}
-            <Card>
+            {/* Generate Button (for large screens) */}
+            <Card className="hidden lg:block">
               <CardContent className="pt-6">
                 <GenerateButton
                   onGenerate={handleGenerate}
@@ -272,33 +302,53 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Features Grid */}
-          <div className="lg:col-span-2">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold mb-2">
-                Features ({selectedFeatures.length} selected)
-              </h2>
-              <p className="text-muted-foreground">
-                Select the features you want to include in your project.
-              </p>
-            </div>
+          {/* Right Features + Simulation */}
+          <div className="lg:col-span-2 h-[calc(100vh-100px)] lg:overflow-auto hide-scrollbar">
+            {/* Before generation: show features */}
+            {!isGenerating && (
+              <>
+                <div className="mb-6">
+                  <p className="text-muted-foreground">
+                    Select the features you want to include in your project.
+                  </p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {availableFeatures.map((feature) => (
-                <FeatureCard
-                  key={feature.id}
-                  title={feature.title}
-                  description={feature.description}
-                  category={feature.category}
-                  icon={feature.icon}
-                  isSelected={selectedFeatures.includes(feature.id)}
-                  onToggle={() => toggleFeature(feature.id)}
-                />
-              ))}
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {availableFeatures.map((feature) => (
+                    <FeatureCard
+                      key={feature.id}
+                      title={feature.title}
+                      description={feature.description}
+                      category={feature.category}
+                      icon={feature.icon}
+                      isSelected={selectedFeatures.includes(feature.id)}
+                      onToggle={() => toggleFeature(feature.id)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* During generation: show loading animation */}
+            {isGenerating && (
+              <LoadingAnimation
+                isGenerating={isGenerating}
+                steps={generationSteps}
+              />
+            )}
           </div>
         </div>
       </div>
+
+      {/* Floating Generate Button for Mobile */}
+      <Card className="lg:hidden fixed bottom-0 left-0 right-0 z-50 py-4 px-6 bg-background">
+        <CardContent className="pt-6">
+          <GenerateButton
+            onGenerate={handleGenerate}
+            selectedFeatures={selectedFeatures}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

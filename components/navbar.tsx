@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import {
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Code, Menu, X } from "lucide-react";
@@ -34,7 +40,14 @@ export function Navbar({ showAuth = false }: NavbarProps) {
                       Sign In
                     </Button>
                   </SignInButton>
+
+                  <SignUpButton mode="modal">
+                    <Button variant="outline" size="sm">
+                      Sign Up
+                    </Button>
+                  </SignUpButton>
                 </SignedOut>
+
                 <SignedIn>
                   <UserButton afterSignOutUrl="/" />
                 </SignedIn>
@@ -66,11 +79,18 @@ export function Navbar({ showAuth = false }: NavbarProps) {
               <>
                 <SignedOut>
                   <SignInButton mode="modal">
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full mb-2">
                       Sign In
                     </Button>
                   </SignInButton>
+
+                  <SignUpButton mode="modal">
+                    <Button variant="outline" size="sm" className="w-full">
+                      Sign Up
+                    </Button>
+                  </SignUpButton>
                 </SignedOut>
+
                 <SignedIn>
                   <div className="flex justify-center">
                     <UserButton afterSignOutUrl="/" />
