@@ -316,114 +316,6 @@ export default function Dashboard() {
     setCurrentStep(0);
   };
 
-  // // Main generate function (kept structure as requested, enhanced to populate result view)
-  // const handleGenerate = async () => {
-  //   if (!isLoaded || !userId) {
-  //     router.push("/sign-up");
-  //     toast.error("You must be logged in to generate a project!");
-  //     return;
-  //   }
-
-  //   if (selectedFeatures.length === 0) {
-  //     toast.error("Select at least one feature!");
-  //     return;
-  //   }
-
-  //   setIsGenerating(true);
-  //   setProgress(0);
-  //   setCurrentStep(0);
-
-  //   try {
-  //     // 🔹 Call backend
-  //     const response = await fetch("http://localhost:4000/generate-project", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({
-  //         stack: stack,
-  //         version: version,
-  //         features: selectedFeatures,
-  //         userId,
-  //       }),
-  //     });
-
-  //     let data;
-  //     if (response.ok) {
-  //       data = await response.json();
-  //     } else {
-  //       // fallback dummy response
-  //       data = {
-  //         zipUrl: "/dummy/project.zip",
-  //         manifest: {
-  //           id: "demo-123",
-  //           stack: stack,
-  //           version: version,
-  //           features: selectedFeatures,
-  //           summary: "Demo project boilerplate generated for preview.",
-  //         },
-  //       };
-  //     }
-
-  //     console.log("API response:", data);
-
-  //     // 🔹 Simulate progress animation (kept as original)
-  //     const generationDuration = 5000;
-  //     const stepDuration = generationDuration / generationSteps.length;
-
-  //     for (let i = 0; i < generationSteps.length; i++) {
-  //       setCurrentStep(i);
-
-  //       const stepStart = (i / generationSteps.length) * 100;
-  //       const stepEnd = ((i + 1) / generationSteps.length) * 100;
-
-  //       const stepInterval = setInterval(() => {
-  //         setProgress((prev) => {
-  //           if (prev < stepEnd) return prev + 1;
-  //           clearInterval(stepInterval);
-  //           return prev;
-  //         });
-  //       }, stepDuration / (stepEnd - stepStart));
-
-  //       await new Promise((resolve) => setTimeout(resolve, stepDuration));
-  //     }
-
-  //     toast.success("Project generated successfully!");
-
-  //     // 🔹 Instead of auto-downloading: fetch file, store as blob URL and show result page
-  //     try {
-  //       const fileResponse = await fetch(data.zipUrl);
-  //       if (!fileResponse.ok) throw new Error("File download failed");
-
-  //       const blob = await fileResponse.blob();
-  //       const objectUrl = window.URL.createObjectURL(blob);
-
-  //       // store for result page
-  //       setDownloadUrl(objectUrl);
-  //       setDownloadFileName(
-  //         (data.zipUrl && data.zipUrl.split("/").pop()) || "project.zip"
-  //       );
-  //       setManifest(data.manifest || null);
-
-  //       // show result UI and stop loading
-  //       setIsGenerating(false);
-  //       setShowResult(true);
-  //       setProgress(100);
-  //       setCurrentStep(0);
-
-  //       toast.success(
-  //         "File is ready — you can download it from the result panel."
-  //       );
-  //     } catch (err) {
-  //       console.error("Download error:", err);
-  //       toast.error("Failed to fetch the generated file!");
-  //       // still stop generating so user can retry
-  //       setIsGenerating(false);
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //     toast.error("Error generating project!");
-  //     setIsGenerating(false);
-  //   }
-  // };
   const handleGenerate = async () => {
     if (!isLoaded || !userId) {
       router.push("/sign-up");
@@ -473,9 +365,6 @@ export default function Dashboard() {
 
         await new Promise((resolve) => setTimeout(resolve, stepDuration));
       }
-
-      toast.success("Project generated successfully!");
-
       // 🔹 Instead of fetching from API, just use the dummy file
       const fileResponse = await fetch(data.zipUrl);
       const blob = await fileResponse.blob();
@@ -492,8 +381,7 @@ export default function Dashboard() {
       setShowResult(true);
       setProgress(100);
       setCurrentStep(0);
-
-      toast.success("Dummy file ready — download from result panel.");
+      setSelectedFeatures([]);
     } catch (err) {
       console.error("Error generating project:", err);
       toast.error("Error generating project!");
@@ -650,95 +538,7 @@ export default function Dashboard() {
 
             {/* After generation: show result panel with download / actions */}
             {showResult && (
-              // Center on desktop; on mobile make card cover whole screen and remove border
-              // <div className="h-full flex items-center justify-center">
-              //   <div className="w-full px-4">
-              //     <Card className="mx-auto rounded-none h-screen sm:rounded-lg sm:h-auto border-0">
-              //       <CardHeader>
-              //         <CardTitle>Project Ready</CardTitle>
-              //         <CardDescription>
-              //           Your project has been generated. Download it below or
-              //           generate a new one.
-              //         </CardDescription>
-              //       </CardHeader>
-
-              //       <CardContent>
-              //         {/* Summary */}
-              //         <div className="mb-4">
-              //           <p className="font-medium">Summary</p>
-              //           <div className="mt-2">
-              //             <p className="text-sm">
-              //               <strong>Stack:</strong> {stack}
-              //             </p>
-              //             <p className="text-sm">
-              //               <strong>Version:</strong> {version}
-              //             </p>
-              //             <p className="text-sm">
-              //               <strong>Features:</strong> {selectedFeatures.length}{" "}
-              //               selected
-              //             </p>
-              //           </div>
-              //         </div>
-
-              //         {/* Selected features details */}
-              //         <div className="mb-4">
-              //           <p className="font-medium">Selected Features</p>
-              //           <ul className="mt-2 list-disc list-inside text-sm">
-              //             {selectedFeatures.length ? (
-              //               selectedFeatures.map((id) => {
-              //                 const f = availableFeatures.find(
-              //                   (x) => x.id === id
-              //                 );
-              //                 return (
-              //                   <li key={id}>
-              //                     {f?.title ?? id} —{" "}
-              //                     <span className="text-xs text-muted-foreground">
-              //                       {f?.category}
-              //                     </span>
-              //                   </li>
-              //                 );
-              //               })
-              //             ) : (
-              //               <li className="text-sm text-muted-foreground">
-              //                 No features selected
-              //               </li>
-              //             )}
-              //           </ul>
-              //         </div>
-
-              //         {/* Manifest (raw) */}
-              //         <div className="mb-4">
-              //           <p className="font-medium">Manifest</p>
-              //           <pre className="text-sm bg-muted p-2 rounded mt-2 overflow-auto">
-              //             {JSON.stringify(manifest, null, 2)}
-              //           </pre>
-              //         </div>
-
-              //         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-3 sm:space-y-0">
-              //           <button
-              //             className="btn"
-              //             onClick={handleDownloadClick}
-              //             disabled={!downloadUrl}
-              //           >
-              //             Download
-              //           </button>
-
-              //           <button
-              //             className="btn-outline"
-              //             onClick={() => {
-              //               // go back to feature selection, keep selections (mobile full-screen result removed)
-              //               handleBackToDashboard();
-              //             }}
-              //           >
-              //             Back to Dashboard
-              //           </button>
-              //         </div>
-              //       </CardContent>
-              //     </Card>
-              //   </div>
-              // </div>
-              // wherever you use the component
-              <div className="lg:col-span-2 h-[calc(100vh-150px)] lg:overflow-auto hide-scrollbar lg:pr-10 ">
+              <div className="lg:col-span-2 h-[calc(100vh-200px)] lg:overflow-auto hide-scrollbar ">
                 <ProjectReadyCard
                   stack="Next.js + TS"
                   version="1.0.0"
