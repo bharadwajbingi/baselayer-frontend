@@ -177,6 +177,12 @@ export default function Dashboard() {
   };
 
   const handleGenerate = async () => {
+    if (!isLoaded || !userId) {
+      router.push("/sign-up"); // redirect to Clerk signup page
+
+      toast.error("You must be logged in to generate a project!");
+      return;
+    }
     if (selectedFeatures.length === 0) {
       toast.error("Select at least one feature!");
       return;
