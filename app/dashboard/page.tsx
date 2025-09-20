@@ -331,10 +331,12 @@ export default function Dashboard() {
 
             {/* During generation: show loading animation */}
             {isGenerating && (
-              <LoadingAnimation
-                isGenerating={isGenerating}
-                steps={generationSteps}
-              />
+              <div className="transform -translate-y-5 h-full">
+                <LoadingAnimation
+                  isGenerating={isGenerating}
+                  steps={generationSteps}
+                />
+              </div>
             )}
           </div>
         </div>

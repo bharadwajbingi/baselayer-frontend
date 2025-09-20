@@ -24,7 +24,7 @@ export default function SimpleLoading({
   if (!isGenerating) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full space-y-2">
+    <div className="flex flex-col items-center justify-center h-full space-y-10">
       {/* Large DaisyUI Infinity Loader */}
       <span className="loading loading-infinity loading-xl text-primary"></span>
 
