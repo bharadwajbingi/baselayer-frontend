@@ -738,16 +738,18 @@ export default function Dashboard() {
               //   </div>
               // </div>
               // wherever you use the component
-              <ProjectReadyCard
-                stack="Next.js + TS"
-                version="1.0.0"
-                selectedFeatures={selectedFeatures} // string[]
-                availableFeatures={availableFeatures} // Feature[]
-                manifest={manifest}
-                downloadUrl={downloadUrl}
-                handleBackToDashboard={handleBackToDashboard}
-                handleDownloadClick={handleDownloadClick}
-              />
+              <div className="lg:col-span-2 h-[calc(100vh-150px)] lg:overflow-auto hide-scrollbar lg:pr-10 ">
+                <ProjectReadyCard
+                  stack="Next.js + TS"
+                  version="1.0.0"
+                  selectedFeatures={selectedFeatures} // string[]
+                  availableFeatures={availableFeatures} // Feature[]
+                  manifest={manifest}
+                  downloadUrl={downloadUrl}
+                  handleBackToDashboard={handleBackToDashboard}
+                  handleDownloadClick={handleDownloadClick}
+                />
+              </div>
             )}
           </div>
         </div>
