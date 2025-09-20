@@ -314,6 +314,7 @@ export default function Dashboard() {
     setIsGenerating(false);
     setProgress(0);
     setCurrentStep(0);
+    setSelectedFeatures([]);
   };
 
   const handleGenerate = async () => {
@@ -381,7 +382,6 @@ export default function Dashboard() {
       setShowResult(true);
       setProgress(100);
       setCurrentStep(0);
-      setSelectedFeatures([]);
     } catch (err) {
       console.error("Error generating project:", err);
       toast.error("Error generating project!");
