@@ -1,9 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { Bell, Box, GitBranch, Activity } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Activity,
+  BarChart,
+  Bell,
+  Box,
+  Brain,
+  Building,
+  CreditCard,
+  FileText,
+  Folder,
+  Globe,
+  Globe2,
+  GitBranch,
+  List,
+  Lock,
+  Mail,
+  Paintbrush,
+  Search,
+  Shield,
+  Smartphone,
+  Zap,
+  Users,
+  Clock,
+} from "lucide-react";
+
 import LoadingAnimation from "@components/loading-animation";
 
 import {
@@ -25,26 +50,15 @@ import {
 import { Navbar } from "@/components/navbar";
 import { FeatureCard } from "@/components/feature-card";
 import { GenerateButton } from "@/components/generate-button";
-import { generateProject } from "@/lib/api";
-import { toast } from "sonner";
-import {
-  Shield,
-  CreditCard,
-  Database,
-  Mail,
-  Zap,
-  Users,
-  FileText,
-  BarChart,
-} from "lucide-react";
+import ProjectReadyCard from "@/components/result";
 
 // --- Types ---
-type ProjectInput = {
-  stack: string;
-  version: string;
-  features: string[];
-  userId?: string; // ✅ Add userId as optional
-};
+// type ProjectInput = {
+//   stack: string;
+//   version: string;
+//   features: string[];
+//   userId?: string;
+// };
 
 // --- Constants ---
 const stacks = [
@@ -82,7 +96,7 @@ const availableFeatures = [
     title: "Database Setup",
     description: "Pre-configured Postgres/Mongo with ORM (Prisma/SQLAlchemy)",
     category: "Data",
-    icon: <Database className="h-4 w-4" />,
+    icon: <Folder className="h-4 w-4" />,
   },
   {
     id: "api",
@@ -148,24 +162,126 @@ const availableFeatures = [
     category: "DevOps",
     icon: <Box className="h-4 w-4" />,
   },
+  {
+    id: "multi-tenancy",
+    title: "Multi-Tenancy",
+    description: "Support for workspaces, teams, and organizations",
+    category: "Management",
+    icon: <Building className="h-4 w-4" />,
+  },
+  {
+    id: "rbac",
+    title: "Role-Based Access Control",
+    description: "Fine-grained user roles and permissions",
+    category: "Security",
+    icon: <Lock className="h-4 w-4" />,
+  },
+  {
+    id: "file-storage",
+    title: "File Storage",
+    description: "Upload, manage, and serve files via AWS S3/Cloudflare R2",
+    category: "Data",
+    icon: <Folder className="h-4 w-4" />,
+  },
+  {
+    id: "search",
+    title: "Full-Text Search",
+    description:
+      "Search across content and data with Elastic/Lucene/Meilisearch",
+    category: "Insights",
+    icon: <Search className="h-4 w-4" />,
+  },
+  {
+    id: "i18n",
+    title: "Internationalization",
+    description: "Multi-language and localization support",
+    category: "Content",
+    icon: <Globe className="h-4 w-4" />,
+  },
+  {
+    id: "webhooks",
+    title: "Webhooks",
+    description: "Send and receive webhooks for external integrations",
+    category: "Backend",
+    icon: <Zap className="h-4 w-4" />,
+  },
+  {
+    id: "ai-integration",
+    title: "AI/ML Features",
+    description: "LLM integration (chat, summarization, embeddings, etc.)",
+    category: "Insights",
+    icon: <Brain className="h-4 w-4" />,
+  },
+  {
+    id: "audit-logs",
+    title: "Audit Logs",
+    description: "Track user actions and system changes for compliance",
+    category: "Security",
+    icon: <List className="h-4 w-4" />,
+  },
+  {
+    id: "custom-domains",
+    title: "Custom Domains",
+    description: "Users can bring their own domain with SSL support",
+    category: "DevOps",
+    icon: <Globe2 className="h-4 w-4" />,
+  },
+  {
+    id: "theming",
+    title: "Custom Theming",
+    description: "User-specific themes, branding, and white-labeling",
+    category: "Content",
+    icon: <Paintbrush className="h-4 w-4" />,
+  },
+  {
+    id: "mobile-app",
+    title: "Mobile App Support",
+    description: "API & components ready for React Native / Flutter clients",
+    category: "Frontend",
+    icon: <Smartphone className="h-4 w-4" />,
+  },
+  {
+    id: "scheduler",
+    title: "Task Scheduler",
+    description: "Background jobs and cron tasks with BullMQ/Sidekiq",
+    category: "Backend",
+    icon: <Clock className="h-4 w-4" />,
+  },
 ];
 
 // --- Component ---
 export default function Dashboard() {
   const { isLoaded, userId } = useAuth();
+
+  // form state
   const [stack, setStack] = useState<string>("nextjs-ts");
   const [version, setVersion] = useState<string>("stable");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+
   const router = useRouter();
+
   // Generation simulation states
   const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [, setProgress] = useState(0);
+  const [, setCurrentStep] = useState(0);
+
+  // Result states
+  const [showResult, setShowResult] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadFileName, setDownloadFileName] = useState<string>("test.txt");
+  const [manifest, setManifest] = useState<unknown | null>(null);
+
   const generationSteps = [
-    "Initializing project structure...",
-    "Installing dependencies...",
-    "Configuring selected features...",
-    "Finalizing setup...",
+    "Cooking your boilerplate...",
+    "Adding some magic...",
+    "Mixing ingredients...",
+    "Whipping up your project...",
+    "Applying secret sauce...",
+    "Fine-tuning everything...",
+    "Almost ready...",
+    "Putting final touches...",
+    "Your project is getting spicy...",
+    "Serving hot soon...",
   ];
 
   const toggleFeature = (featureId: string) => {
@@ -176,13 +292,145 @@ export default function Dashboard() {
     );
   };
 
+  // Download helper (downloads the blob URL stored in state)
+  const handleDownloadClick = () => {
+    if (!downloadUrl) return;
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = downloadFileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast.success("Download started");
+  };
+
+  // Back to dashboard (keep selections)
+  const handleBackToDashboard = () => {
+    if (downloadUrl) {
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadUrl(null);
+    }
+    setShowResult(false);
+    setIsGenerating(false);
+    setProgress(0);
+    setCurrentStep(0);
+  };
+
+  // // Main generate function (kept structure as requested, enhanced to populate result view)
+  // const handleGenerate = async () => {
+  //   if (!isLoaded || !userId) {
+  //     router.push("/sign-up");
+  //     toast.error("You must be logged in to generate a project!");
+  //     return;
+  //   }
+
+  //   if (selectedFeatures.length === 0) {
+  //     toast.error("Select at least one feature!");
+  //     return;
+  //   }
+
+  //   setIsGenerating(true);
+  //   setProgress(0);
+  //   setCurrentStep(0);
+
+  //   try {
+  //     // 🔹 Call backend
+  //     const response = await fetch("http://localhost:4000/generate-project", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         stack: stack,
+  //         version: version,
+  //         features: selectedFeatures,
+  //         userId,
+  //       }),
+  //     });
+
+  //     let data;
+  //     if (response.ok) {
+  //       data = await response.json();
+  //     } else {
+  //       // fallback dummy response
+  //       data = {
+  //         zipUrl: "/dummy/project.zip",
+  //         manifest: {
+  //           id: "demo-123",
+  //           stack: stack,
+  //           version: version,
+  //           features: selectedFeatures,
+  //           summary: "Demo project boilerplate generated for preview.",
+  //         },
+  //       };
+  //     }
+
+  //     console.log("API response:", data);
+
+  //     // 🔹 Simulate progress animation (kept as original)
+  //     const generationDuration = 5000;
+  //     const stepDuration = generationDuration / generationSteps.length;
+
+  //     for (let i = 0; i < generationSteps.length; i++) {
+  //       setCurrentStep(i);
+
+  //       const stepStart = (i / generationSteps.length) * 100;
+  //       const stepEnd = ((i + 1) / generationSteps.length) * 100;
+
+  //       const stepInterval = setInterval(() => {
+  //         setProgress((prev) => {
+  //           if (prev < stepEnd) return prev + 1;
+  //           clearInterval(stepInterval);
+  //           return prev;
+  //         });
+  //       }, stepDuration / (stepEnd - stepStart));
+
+  //       await new Promise((resolve) => setTimeout(resolve, stepDuration));
+  //     }
+
+  //     toast.success("Project generated successfully!");
+
+  //     // 🔹 Instead of auto-downloading: fetch file, store as blob URL and show result page
+  //     try {
+  //       const fileResponse = await fetch(data.zipUrl);
+  //       if (!fileResponse.ok) throw new Error("File download failed");
+
+  //       const blob = await fileResponse.blob();
+  //       const objectUrl = window.URL.createObjectURL(blob);
+
+  //       // store for result page
+  //       setDownloadUrl(objectUrl);
+  //       setDownloadFileName(
+  //         (data.zipUrl && data.zipUrl.split("/").pop()) || "project.zip"
+  //       );
+  //       setManifest(data.manifest || null);
+
+  //       // show result UI and stop loading
+  //       setIsGenerating(false);
+  //       setShowResult(true);
+  //       setProgress(100);
+  //       setCurrentStep(0);
+
+  //       toast.success(
+  //         "File is ready — you can download it from the result panel."
+  //       );
+  //     } catch (err) {
+  //       console.error("Download error:", err);
+  //       toast.error("Failed to fetch the generated file!");
+  //       // still stop generating so user can retry
+  //       setIsGenerating(false);
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast.error("Error generating project!");
+  //     setIsGenerating(false);
+  //   }
+  // };
   const handleGenerate = async () => {
     if (!isLoaded || !userId) {
-      router.push("/sign-up"); // redirect to Clerk signup page
-
+      router.push("/sign-up");
       toast.error("You must be logged in to generate a project!");
       return;
     }
+
     if (selectedFeatures.length === 0) {
       toast.error("Select at least one feature!");
       return;
@@ -192,33 +440,73 @@ export default function Dashboard() {
     setProgress(0);
     setCurrentStep(0);
 
-    const generationDuration = 5000; // total animation duration in ms
-    const stepDuration = generationDuration / generationSteps.length;
+    try {
+      // 🔹 Dummy response (no API call yet)
+      const data = {
+        zipUrl: "/dummy/project.zip", // make sure you add this file in your public/ folder
+        manifest: {
+          id: "demo-123",
+          stack: stack,
+          version: version,
+          features: selectedFeatures,
+          summary: "Demo project boilerplate generated for preview.",
+        },
+      };
 
-    // Simulate steps and progress
-    for (let i = 0; i < generationSteps.length; i++) {
-      setCurrentStep(i);
+      // 🔹 Simulate progress animation (same as before)
+      const generationDuration = 5000;
+      const stepDuration = generationDuration / generationSteps.length;
 
-      const stepStart = (i / generationSteps.length) * 100;
-      const stepEnd = ((i + 1) / generationSteps.length) * 100;
+      for (let i = 0; i < generationSteps.length; i++) {
+        setCurrentStep(i);
 
-      const stepInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev < stepEnd) return prev + 1;
-          clearInterval(stepInterval);
-          return prev;
-        });
-      }, stepDuration / (stepEnd - stepStart));
+        const stepStart = (i / generationSteps.length) * 100;
+        const stepEnd = ((i + 1) / generationSteps.length) * 100;
 
-      await new Promise((resolve) => setTimeout(resolve, stepDuration));
+        const stepInterval = setInterval(() => {
+          setProgress((prev) => {
+            if (prev < stepEnd) return prev + 1;
+            clearInterval(stepInterval);
+            return prev;
+          });
+        }, stepDuration / (stepEnd - stepStart));
+
+        await new Promise((resolve) => setTimeout(resolve, stepDuration));
+      }
+
+      toast.success("Project generated successfully!");
+
+      // 🔹 Instead of fetching from API, just use the dummy file
+      const fileResponse = await fetch(data.zipUrl);
+      const blob = await fileResponse.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+
+      setDownloadUrl(objectUrl);
+      setDownloadFileName(
+        (data.zipUrl && data.zipUrl.split("/").pop()) || "project.zip"
+      );
+      setManifest(data.manifest);
+
+      // Show result UI
+      setIsGenerating(false);
+      setShowResult(true);
+      setProgress(100);
+      setCurrentStep(0);
+
+      toast.success("Dummy file ready — download from result panel.");
+    } catch (err) {
+      console.error("Error generating project:", err);
+      toast.error("Error generating project!");
+      setIsGenerating(false);
     }
-
-    // After animation, just show success toast for now
-    toast.success("Project generation simulated successfully!");
-    setIsGenerating(false);
-    setProgress(0);
-    setCurrentStep(0);
   };
+
+  // cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (downloadUrl) window.URL.revokeObjectURL(downloadUrl);
+    };
+  }, [downloadUrl]);
 
   if (!isLoaded) {
     return (
@@ -237,10 +525,15 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background lg:fixed">
       <Navbar showAuth={true} />
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:pl-20 lg:ml-10 lg:px-8 py-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:pl-20  lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Configuration Panel (Sticky on large screens) */}
-          <div className="lg:col-span-1 space-y-6 lg:sticky top-0 lg:mt-20">
+          {/* Configuration Panel (Sticky on large screens)
+              Hidden on small screens while generating / showing result so result can take full screen */}
+          <div
+            className={`lg:col-span-1 space-y-6 lg:sticky top-0 lg:mt-20 ${
+              isGenerating || showResult ? "hidden lg:block" : ""
+            }`}
+          >
             <div className="mb-6 pl-1">
               <h1 className="text-3xl font-bold text-foreground mb-2">
                 Project Generator
@@ -250,6 +543,7 @@ export default function Dashboard() {
                 need.
               </p>
             </div>
+
             {/* Stack Selector */}
             <Card>
               <CardHeader>
@@ -300,18 +594,27 @@ export default function Dashboard() {
             {/* Generate Button (for large screens) */}
             <Card className="hidden lg:block">
               <CardContent className="pt-6">
-                <GenerateButton
-                  onGenerate={handleGenerate}
-                  selectedFeatures={selectedFeatures}
-                />
+                {/* disable visual + interactivity when generating or showing result */}
+                <div
+                  className={
+                    isGenerating || showResult
+                      ? "opacity-50 pointer-events-none"
+                      : ""
+                  }
+                >
+                  <GenerateButton
+                    onGenerate={handleGenerate}
+                    selectedFeatures={selectedFeatures}
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Right Features + Simulation */}
-          <div className="lg:col-span-2 h-[calc(100vh-100px)] lg:overflow-auto hide-scrollbar">
-            {/* Before generation: show features */}
-            {!isGenerating && (
+          {/* Right Features + Simulation / Result */}
+          <div className="lg:col-span-2 h-[calc(100vh-150px)] lg:overflow-auto hide-scrollbar lg:pr-10 ">
+            {/* Before generation: show features (hidden when generating or showing result) */}
+            {!isGenerating && !showResult && (
               <>
                 <div className="mb-6">
                   <p className="text-muted-foreground">
@@ -344,6 +647,108 @@ export default function Dashboard() {
                 />
               </div>
             )}
+
+            {/* After generation: show result panel with download / actions */}
+            {showResult && (
+              // Center on desktop; on mobile make card cover whole screen and remove border
+              // <div className="h-full flex items-center justify-center">
+              //   <div className="w-full px-4">
+              //     <Card className="mx-auto rounded-none h-screen sm:rounded-lg sm:h-auto border-0">
+              //       <CardHeader>
+              //         <CardTitle>Project Ready</CardTitle>
+              //         <CardDescription>
+              //           Your project has been generated. Download it below or
+              //           generate a new one.
+              //         </CardDescription>
+              //       </CardHeader>
+
+              //       <CardContent>
+              //         {/* Summary */}
+              //         <div className="mb-4">
+              //           <p className="font-medium">Summary</p>
+              //           <div className="mt-2">
+              //             <p className="text-sm">
+              //               <strong>Stack:</strong> {stack}
+              //             </p>
+              //             <p className="text-sm">
+              //               <strong>Version:</strong> {version}
+              //             </p>
+              //             <p className="text-sm">
+              //               <strong>Features:</strong> {selectedFeatures.length}{" "}
+              //               selected
+              //             </p>
+              //           </div>
+              //         </div>
+
+              //         {/* Selected features details */}
+              //         <div className="mb-4">
+              //           <p className="font-medium">Selected Features</p>
+              //           <ul className="mt-2 list-disc list-inside text-sm">
+              //             {selectedFeatures.length ? (
+              //               selectedFeatures.map((id) => {
+              //                 const f = availableFeatures.find(
+              //                   (x) => x.id === id
+              //                 );
+              //                 return (
+              //                   <li key={id}>
+              //                     {f?.title ?? id} —{" "}
+              //                     <span className="text-xs text-muted-foreground">
+              //                       {f?.category}
+              //                     </span>
+              //                   </li>
+              //                 );
+              //               })
+              //             ) : (
+              //               <li className="text-sm text-muted-foreground">
+              //                 No features selected
+              //               </li>
+              //             )}
+              //           </ul>
+              //         </div>
+
+              //         {/* Manifest (raw) */}
+              //         <div className="mb-4">
+              //           <p className="font-medium">Manifest</p>
+              //           <pre className="text-sm bg-muted p-2 rounded mt-2 overflow-auto">
+              //             {JSON.stringify(manifest, null, 2)}
+              //           </pre>
+              //         </div>
+
+              //         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-3 sm:space-y-0">
+              //           <button
+              //             className="btn"
+              //             onClick={handleDownloadClick}
+              //             disabled={!downloadUrl}
+              //           >
+              //             Download
+              //           </button>
+
+              //           <button
+              //             className="btn-outline"
+              //             onClick={() => {
+              //               // go back to feature selection, keep selections (mobile full-screen result removed)
+              //               handleBackToDashboard();
+              //             }}
+              //           >
+              //             Back to Dashboard
+              //           </button>
+              //         </div>
+              //       </CardContent>
+              //     </Card>
+              //   </div>
+              // </div>
+              // wherever you use the component
+              <ProjectReadyCard
+                stack="Next.js + TS"
+                version="1.0.0"
+                selectedFeatures={selectedFeatures} // string[]
+                availableFeatures={availableFeatures} // Feature[]
+                manifest={manifest}
+                downloadUrl={downloadUrl}
+                handleBackToDashboard={handleBackToDashboard}
+                handleDownloadClick={handleDownloadClick}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -351,10 +756,17 @@ export default function Dashboard() {
       {/* Floating Generate Button for Mobile */}
       <Card className="lg:hidden fixed bottom-0 left-0 right-0 z-50 py-4 px-6 bg-background">
         <CardContent className="pt-6">
-          <GenerateButton
-            onGenerate={handleGenerate}
-            selectedFeatures={selectedFeatures}
-          />
+          {/* disable on mobile while generating or when showing result */}
+          <div
+            className={
+              isGenerating || showResult ? "opacity-50 pointer-events-none" : ""
+            }
+          >
+            <GenerateButton
+              onGenerate={handleGenerate}
+              selectedFeatures={selectedFeatures}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
