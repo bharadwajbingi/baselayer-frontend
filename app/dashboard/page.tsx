@@ -631,7 +631,7 @@ export default function Dashboard() {
             )}
 
             {isGenerating && (
-              <div className="transform translate-y-[250px] md:translate-y-10 h-full">
+              <div className="transform translate-y-[300px] md:translate-y-10 h-full">
                 <LoadingAnimation
                   isGenerating={isGenerating}
                   steps={generationSteps}
