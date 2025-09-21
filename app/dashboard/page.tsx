@@ -605,7 +605,7 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <div className="lg:col-span-2 h-[calc(100vh-150px)] lg:overflow-auto hide-scrollbar lg:pr-10 ">
+          <div className="lg:col-span-2 lg:h-[calc(100vh-150px)] lg:overflow-auto hide-scrollbar lg:pr-10 pb-24 mb-20">
             {!isGenerating && !showResult && (
               <>
                 <div className="mb-6">
@@ -631,7 +631,7 @@ export default function Dashboard() {
             )}
 
             {isGenerating && (
-              <div className="transform -translate-y-5 h-full">
+              <div className="transform translate-y-[250px] md:translate-y-10 h-full">
                 <LoadingAnimation
                   isGenerating={isGenerating}
                   steps={generationSteps}
