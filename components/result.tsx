@@ -60,7 +60,7 @@ export default function ProjectReadyCard({
   return (
     <div className="lg:fixed">
       <div className="w-full px-4 sm:mt-5 sm:pt-0 pt-10">
-        <Card className="mx-auto rounded-none  p-2 rounded-lg sm:h-auto border-0 shadow-xl">
+        <Card className="mx-auto rounded-none  p-2 rounded-lg sm:h-auto border-0 shadow-lg">
           <CardHeader>
             <div className="flex items-start justify-between w-full gap-4">
               <div>
@@ -152,10 +152,9 @@ export default function ProjectReadyCard({
                 aria-label="Download codebase (zip)"
                 className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border shadow-md
                bg-white hover:bg-gray-50 transition-colors text-slate-900 font-semibold
-               border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2
+               border-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 dark:focus-visible:ring-slate-600
                disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {/* box + download arrow */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-6 h-6"
@@ -188,10 +187,9 @@ export default function ProjectReadyCard({
                 aria-label="Download documentation (PDF)"
                 className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border shadow-md
                bg-white hover:bg-gray-50 transition-colors text-slate-900 font-semibold
-               border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2
+               border-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 dark:focus-visible:ring-slate-600
                disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {/* improved document icon with small red PDF badge */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-6 h-6"
@@ -199,7 +197,6 @@ export default function ProjectReadyCard({
                   aria-hidden="true"
                   role="img"
                 >
-                  {/* document */}
                   <path
                     d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-6z"
                     fill="none"
@@ -225,7 +222,6 @@ export default function ProjectReadyCard({
                     strokeLinejoin="round"
                   />
 
-                  {/* red PDF badge */}
                   <g transform="translate(12,14)">
                     <rect
                       x="0"
@@ -257,7 +253,7 @@ export default function ProjectReadyCard({
                 aria-label="Back to Dashboard"
                 className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border shadow-md
                bg-white hover:bg-gray-50 transition-colors text-slate-900 font-semibold
-               border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+               border-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 dark:focus-visible:ring-slate-600"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
