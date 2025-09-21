@@ -60,7 +60,7 @@ export default function ProjectReadyCard({
   return (
     <div className="lg:fixed">
       <div className="w-full px-4 sm:mt-5 sm:pt-0 pt-10">
-        <Card className="mx-auto rounded-none h-screen sm:rounded-lg sm:h-auto border-0 shadow-xl">
+        <Card className="mx-auto rounded-none  p-2 rounded-lg sm:h-auto border-0 shadow-xl">
           <CardHeader>
             <div className="flex items-start justify-between w-full gap-4">
               <div>
@@ -145,71 +145,137 @@ export default function ProjectReadyCard({
 
             {/* Always visible: buttons */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-3 sm:space-y-0 mt-6 mb-12">
+              {/* Download Codebase */}
               <button
                 onClick={handleDownloadClick}
                 disabled={!downloadUrl}
-                className="inline-flex items-center gap-3 px-5 py-3 rounded-lg shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed bg-gradient-to-r from-sky-600 to-indigo-600 text-white font-semibold"
+                aria-label="Download codebase (zip)"
+                className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border shadow-md
+               bg-white hover:bg-gray-50 transition-colors text-slate-900 font-semibold
+               border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2
+               disabled:opacity-60 disabled:cursor-not-allowed"
               >
+                {/* box + download arrow */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-6 h-6"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="1.5"
-                    d="M12 2v4m0 0V2m0 4h6a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h6z"
+                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
                   />
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="1.5"
-                    d="M8 12h8M8 16h8"
+                    d="M7 10l5 5 5-5M12 15V3"
                   />
                 </svg>
+
                 <span className="text-sm">Download Codebase</span>
                 <span className="ml-2 text-xs opacity-80">(zip)</span>
               </button>
 
+              {/* Download Docs */}
               <button
                 onClick={handleDownloadDocs}
-                className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border border-red-100 shadow-md bg-white hover:bg-red-50 transition-colors text-red-700 font-semibold"
+                aria-label="Download documentation (PDF)"
+                className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border shadow-md
+               bg-white hover:bg-gray-50 transition-colors text-slate-900 font-semibold
+               border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2
+               disabled:opacity-60 disabled:cursor-not-allowed"
               >
+                {/* improved document icon with small red PDF badge */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-6 h-6"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  role="img"
+                >
+                  {/* document */}
+                  <path
+                    d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-6z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M14 2v6h6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M8 11h8M8 14h6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  {/* red PDF badge */}
+                  <g transform="translate(12,14)">
+                    <rect
+                      x="0"
+                      y="1.2"
+                      width="6"
+                      height="3"
+                      rx="0.5"
+                      fill="#ef4444"
+                    />
+                    <text
+                      x="1.2"
+                      y="3.4"
+                      fontSize="6"
+                      fontWeight="600"
+                      fill="#fff"
+                    >
+                      PDF
+                    </text>
+                  </g>
+                </svg>
+
+                <span className="text-sm">Download Docs</span>
+                <span className="ml-2 text-xs opacity-80">(mini PDF)</span>
+              </button>
+
+              {/* Back to Dashboard */}
+              <button
+                onClick={handleBackToDashboard}
+                aria-label="Back to Dashboard"
+                className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border shadow-md
+               bg-white hover:bg-gray-50 transition-colors text-slate-900 font-semibold
+               border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="1.5"
-                    d="M12 2H7a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V8l-6-6z"
+                    d="M15 18l-6-6 6-6"
                   />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M13 3v6h6"
-                  />
-                  <text x="6" y="17" fontSize="9" fill="currentColor">
-                    PDF
-                  </text>
                 </svg>
-                <span className="text-sm">Download Docs</span>
-                <span className="ml-2 text-xs opacity-80">(mini PDF)</span>
-              </button>
 
-              <button
-                className="btn-outline px-4 py-2 rounded-lg border muted:text-muted-foreground"
-                onClick={handleBackToDashboard}
-              >
-                Back to Dashboard
+                <span className="text-sm">Back to Dashboard</span>
               </button>
             </div>
           </CardContent>

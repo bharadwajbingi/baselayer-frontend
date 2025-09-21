@@ -640,7 +640,7 @@ export default function Dashboard() {
             )}
 
             {showResult && (
-              <div className="lg:col-span-2 h-[calc(100vh-200px)] lg:overflow-auto hide-scrollbar ">
+              <div className="lg:col-span-2  h-full lg:overflow-auto hide-scrollbar ">
                 <ProjectReadyCard
                   stack="Next.js + TS"
                   version="1.0.0"
