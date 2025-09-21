@@ -387,7 +387,6 @@ export default function Dashboard() {
       setShowResult(true);
       setProgress(100);
       setCurrentStep(0);
-      setSelectedFeatures([]);
     } catch (err) {
       console.error("Error generating project:", err);
       toast.error("Error generating project!");
@@ -433,7 +432,7 @@ export default function Dashboard() {
       ) {
         pendingResumeRef.current = true;
         setTimeout(() => {
-          toast.success("Resuming generation after sign-in...");
+          toast.success("Resuming generation...");
           // apply pending features into state (so UI reflects them while generating)
           setStack(pending.stack || stack);
           setVersion(pending.version || version);
@@ -491,6 +490,7 @@ export default function Dashboard() {
     setIsGenerating(false);
     setProgress(0);
     setCurrentStep(0);
+    setSelectedFeatures([]);
     // do NOT clear selectedFeatures here so user can tweak; the requirement
     // was only to start fresh when they go to Home.
   };
