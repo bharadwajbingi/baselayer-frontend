@@ -64,22 +64,23 @@ const benefits = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar showAuth={true} />
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 flex-1">
         <div className="max-w-7xl mx-auto text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
               Generate Your Perfect
               <span className="text-primary block mt-2">
                 Project{" "}
-                <span className="bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 bg-clip-text text-transparent font-bold text-6xl">
+                <span className="bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600 bg-clip-text text-transparent font-bold text-4xl sm:text-5xl md:text-6xl">
                   Boilerplate
                 </span>
               </span>
             </h1>
+
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
               Skip the setup hassle. Choose your tech stack, generate
               production-ready boilerplate code, and start building your next
@@ -173,6 +174,13 @@ export default function Home() {
           </Button>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-6 border-t border-border bg-background text-center">
+        <p className="text-sm text-muted-foreground">
+          © BoilerGen - 2025 Bharadwaj Bingi
+        </p>
+      </footer>
     </div>
   );
 }

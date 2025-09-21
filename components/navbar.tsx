@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Code, Menu, X } from "lucide-react";
@@ -40,12 +34,6 @@ export function Navbar({ showAuth = false }: NavbarProps) {
                       Sign In
                     </Button>
                   </SignInButton>
-
-                  <SignUpButton mode="modal">
-                    <Button variant="outline" size="sm">
-                      Sign Up
-                    </Button>
-                  </SignUpButton>
                 </SignedOut>
 
                 <SignedIn>
@@ -84,11 +72,11 @@ export function Navbar({ showAuth = false }: NavbarProps) {
                     </Button>
                   </SignInButton>
 
-                  <SignUpButton mode="modal">
+                  {/* <SignUpButton mode="modal">
                     <Button variant="outline" size="sm" className="w-full">
                       Sign Up
                     </Button>
-                  </SignUpButton>
+                  </SignUpButton> */}
                 </SignedOut>
 
                 <SignedIn>

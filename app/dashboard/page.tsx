@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useClerk } from "@clerk/nextjs";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
@@ -52,15 +53,15 @@ import { FeatureCard } from "@/components/feature-card";
 import { GenerateButton } from "@/components/generate-button";
 import ProjectReadyCard from "@/components/result";
 
-// --- Types ---
-// type ProjectInput = {
-//   stack: string;
-//   version: string;
-//   features: string[];
-//   userId?: string;
-// };
+/**
+ * STORAGE KEYS
+ * We only store "pending generation" in localStorage to support resume
+ * across auth redirects. We DO NOT persist the form fields on each change.
+ */
+const STORAGE_KEYS = {
+  pending: "pg_pendingGeneration",
+};
 
-// --- Constants ---
 const stacks = [
   { value: "nextjs-ts", label: "Next.js + TypeScript" },
   { value: "nextjs-js", label: "Next.js + JavaScript" },
@@ -249,27 +250,30 @@ const availableFeatures = [
   },
 ];
 
-// --- Component ---
 export default function Dashboard() {
   const { isLoaded, userId } = useAuth();
+  const { openSignIn } = useClerk();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // form state
+  // form state (only in-memory; NOT persisted automatically)
   const [stack, setStack] = useState<string>("nextjs-ts");
   const [version, setVersion] = useState<string>("stable");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
-  const router = useRouter();
-
-  // Generation simulation states
+  // generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [, setProgress] = useState(0);
   const [, setCurrentStep] = useState(0);
 
-  // Result states
+  // results
   const [showResult, setShowResult] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadFileName, setDownloadFileName] = useState<string>("test.txt");
   const [manifest, setManifest] = useState<unknown | null>(null);
+
+  const pendingResumeRef = useRef(false);
+  const prevPathRef = useRef<string | null>(null);
 
   const generationSteps = [
     "Cooking your boilerplate...",
@@ -284,47 +288,46 @@ export default function Dashboard() {
     "Serving hot soon...",
   ];
 
-  const toggleFeature = (featureId: string) => {
+  const toggleFeature = (featureId: string) =>
     setSelectedFeatures((prev) =>
       prev.includes(featureId)
         ? prev.filter((id) => id !== featureId)
         : [...prev, featureId]
     );
-  };
 
-  // Download helper (downloads the blob URL stored in state)
-  const handleDownloadClick = () => {
-    if (!downloadUrl) return;
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = downloadFileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    toast.success("Download started");
-  };
-
-  // Back to dashboard (keep selections)
-  const handleBackToDashboard = () => {
-    if (downloadUrl) {
-      window.URL.revokeObjectURL(downloadUrl);
-      setDownloadUrl(null);
+  // Save pending to localStorage only when unauthenticated user clicks "Generate"
+  const savePendingToLocal = (payload: {
+    stack: string;
+    version: string;
+    features: string[];
+  }) => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEYS.pending,
+        JSON.stringify({ ...payload, createdAt: Date.now() })
+      );
+    } catch (err) {
+      console.log(err);
     }
-    setShowResult(false);
-    setIsGenerating(false);
-    setProgress(0);
-    setCurrentStep(0);
-    setSelectedFeatures([]);
   };
 
-  const handleGenerate = async () => {
-    if (!isLoaded || !userId) {
-      router.push("/sign-up");
-      toast.error("You must be logged in to generate a project!");
-      return;
-    }
+  const clearPending = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.pending);
+    } catch {}
+  };
 
-    if (selectedFeatures.length === 0) {
+  // core generation routine (used for initial start and resume)
+  const startGeneration = async (payload?: {
+    stack?: string;
+    version?: string;
+    features?: string[];
+  }) => {
+    const genStack = payload?.stack ?? stack;
+    const genVersion = payload?.version ?? version;
+    const genFeatures = payload?.features ?? selectedFeatures;
+
+    if (!genFeatures || genFeatures.length === 0) {
       toast.error("Select at least one feature!");
       return;
     }
@@ -334,19 +337,18 @@ export default function Dashboard() {
     setCurrentStep(0);
 
     try {
-      // 🔹 Dummy response (no API call yet)
       const data = {
-        zipUrl: "/dummy/project.zip", // make sure you add this file in your public/ folder
+        zipUrl: "/dummy/project.zip",
         manifest: {
           id: "demo-123",
-          stack: stack,
-          version: version,
-          features: selectedFeatures,
+          stack: genStack,
+          version: genVersion,
+          features: genFeatures,
           summary: "Demo project boilerplate generated for preview.",
         },
       };
 
-      // 🔹 Simulate progress animation (same as before)
+      // Simulate progress
       const generationDuration = 5000;
       const stepDuration = generationDuration / generationSteps.length;
 
@@ -362,11 +364,12 @@ export default function Dashboard() {
             clearInterval(stepInterval);
             return prev;
           });
-        }, stepDuration / (stepEnd - stepStart));
+        }, Math.max(10, stepDuration / Math.max(1, stepEnd - stepStart)));
 
         await new Promise((resolve) => setTimeout(resolve, stepDuration));
       }
-      // 🔹 Instead of fetching from API, just use the dummy file
+
+      // Download the dummy zip (must exist in public/)
       const fileResponse = await fetch(data.zipUrl);
       const blob = await fileResponse.blob();
       const objectUrl = window.URL.createObjectURL(blob);
@@ -377,11 +380,14 @@ export default function Dashboard() {
       );
       setManifest(data.manifest);
 
-      // Show result UI
+      // clean pending (if any)
+      clearPending();
+
       setIsGenerating(false);
       setShowResult(true);
       setProgress(100);
       setCurrentStep(0);
+      setSelectedFeatures([]);
     } catch (err) {
       console.error("Error generating project:", err);
       toast.error("Error generating project!");
@@ -389,7 +395,107 @@ export default function Dashboard() {
     }
   };
 
-  // cleanup blob URL on unmount
+  // Handle clicking generate
+  const handleGenerate = async () => {
+    // if not loaded or not logged in -> save pending and open sign-in
+    if (!isLoaded || !userId) {
+      savePendingToLocal({ stack, version, features: selectedFeatures });
+
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      } else {
+        router.push("/sign-in");
+      }
+
+      toast("Please sign in to continue generation.");
+      return;
+    }
+
+    // If logged in, start right away
+    startGeneration();
+  };
+
+  // Resume pending generation after sign-in (only once)
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!userId) return;
+
+    if (pendingResumeRef.current) return;
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.pending);
+      if (!raw) return;
+      const pending = JSON.parse(raw);
+      if (
+        pending &&
+        Array.isArray(pending.features) &&
+        pending.features.length
+      ) {
+        pendingResumeRef.current = true;
+        setTimeout(() => {
+          toast.success("Resuming generation after sign-in...");
+          // apply pending features into state (so UI reflects them while generating)
+          setStack(pending.stack || stack);
+          setVersion(pending.version || version);
+          setSelectedFeatures(pending.features || selectedFeatures);
+
+          startGeneration({
+            stack: pending.stack,
+            version: pending.version,
+            features: pending.features,
+          });
+        }, 300);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, userId]);
+
+  // Clear selections when user navigates to Home ("/")
+  useEffect(() => {
+    // const prev = prevPathRef.current;
+    // if the current path is "/" clear the selections
+    if (pathname === "/") {
+      setStack("nextjs-ts");
+      setVersion("stable");
+      setSelectedFeatures([]);
+      // Also clear any pending generation since user intentionally left to home
+      clearPending();
+      pendingResumeRef.current = false;
+    }
+    prevPathRef.current = pathname;
+  }, [pathname]);
+
+  // Download helper
+  const handleDownloadClick = () => {
+    if (!downloadUrl) return;
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = downloadFileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast.success("Download started");
+  };
+
+  // Back to dashboard (keep selections cleared or not depending on your preference)
+  // You asked that going back to home resets; here Back just returns to selection state (not clearing unless
+  // they actually navigated to home).
+  const handleBackToDashboard = () => {
+    if (downloadUrl) {
+      window.URL.revokeObjectURL(downloadUrl);
+      setDownloadUrl(null);
+    }
+    setShowResult(false);
+    setIsGenerating(false);
+    setProgress(0);
+    setCurrentStep(0);
+    // do NOT clear selectedFeatures here so user can tweak; the requirement
+    // was only to start fresh when they go to Home.
+  };
+
+  // Cleanup blob URL on unmount
   useEffect(() => {
     return () => {
       if (downloadUrl) window.URL.revokeObjectURL(downloadUrl);
@@ -413,10 +519,8 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background lg:fixed">
       <Navbar showAuth={true} />
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:pl-20  lg:px-8 py-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:pl-20 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Configuration Panel (Sticky on large screens)
-              Hidden on small screens while generating / showing result so result can take full screen */}
           <div
             className={`lg:col-span-1 space-y-6 lg:sticky top-0 lg:mt-20 ${
               isGenerating || showResult ? "hidden lg:block" : ""
@@ -432,7 +536,6 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* Stack Selector */}
             <Card>
               <CardHeader>
                 <CardTitle>Tech Stack</CardTitle>
@@ -441,7 +544,10 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={stack} onValueChange={setStack}>
+                <Select
+                  value={stack}
+                  onValueChange={(v: string) => setStack(v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select tech stack" />
                   </SelectTrigger>
@@ -456,7 +562,6 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Version Selector */}
             <Card>
               <CardHeader>
                 <CardTitle>Framework Version</CardTitle>
@@ -465,7 +570,10 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <RadioGroup value={version} onValueChange={setVersion}>
+                <RadioGroup
+                  value={version}
+                  onValueChange={(v: string) => setVersion(v)}
+                >
                   {versions.map((option) => (
                     <div
                       key={option.value}
@@ -479,10 +587,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Generate Button (for large screens) */}
             <Card className="hidden lg:block">
               <CardContent className="pt-6">
-                {/* disable visual + interactivity when generating or showing result */}
                 <div
                   className={
                     isGenerating || showResult
@@ -499,9 +605,7 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Right Features + Simulation / Result */}
           <div className="lg:col-span-2 h-[calc(100vh-150px)] lg:overflow-auto hide-scrollbar lg:pr-10 ">
-            {/* Before generation: show features (hidden when generating or showing result) */}
             {!isGenerating && !showResult && (
               <>
                 <div className="mb-6">
@@ -526,7 +630,6 @@ export default function Dashboard() {
               </>
             )}
 
-            {/* During generation: show loading animation */}
             {isGenerating && (
               <div className="transform -translate-y-5 h-full">
                 <LoadingAnimation
@@ -536,14 +639,13 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* After generation: show result panel with download / actions */}
             {showResult && (
               <div className="lg:col-span-2 h-[calc(100vh-200px)] lg:overflow-auto hide-scrollbar ">
                 <ProjectReadyCard
                   stack="Next.js + TS"
                   version="1.0.0"
-                  selectedFeatures={selectedFeatures} // string[]
-                  availableFeatures={availableFeatures} // Feature[]
+                  selectedFeatures={selectedFeatures}
+                  availableFeatures={availableFeatures}
                   manifest={manifest}
                   downloadUrl={downloadUrl}
                   handleBackToDashboard={handleBackToDashboard}
@@ -555,10 +657,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Floating Generate Button for Mobile */}
+      {/* Mobile floating generate */}
       <Card className="lg:hidden fixed bottom-0 left-0 right-0 z-50 py-4 px-6 bg-background">
         <CardContent className="pt-6">
-          {/* disable on mobile while generating or when showing result */}
           <div
             className={
               isGenerating || showResult ? "opacity-50 pointer-events-none" : ""
