@@ -53,6 +53,7 @@ import { FeatureCard } from "@/components/feature-card";
 import { GenerateButton } from "@/components/generate-button";
 import ProjectReadyCard from "@/components/result";
 import { Manifest } from "next/dist/lib/metadata/types/manifest-types";
+import LimitModal from "@/components/limitmodel";
 
 /**
  * STORAGE KEYS
@@ -275,6 +276,12 @@ export default function Dashboard() {
 
   const pendingResumeRef = useRef(false);
   const prevPathRef = useRef<string | null>(null);
+  // Add alongside your other states near top of Dashboard()
+  const [limitInfo, setLimitInfo] = useState<{
+    message: string;
+    nextAvailable?: string | null;
+  } | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   const generationSteps = [
     "Cooking your boilerplate...",
@@ -343,7 +350,6 @@ export default function Dashboard() {
         features: genFeatures,
       };
 
-      // Make API call immediately
       const response = await fetch("/api/projects/new", {
         method: "POST",
         headers: {
@@ -352,28 +358,75 @@ export default function Dashboard() {
         body: JSON.stringify(data),
       });
 
+      // If non-ok, try to parse body for helpful info
       if (!response.ok) {
-        throw new Error("Failed to generate project");
+        let body: unknown = null;
+        try {
+          body = await response.json();
+        } catch {
+          // ignore parse errors (body stays null)
+        }
+
+        const readString = (key: string): string | undefined => {
+          if (
+            body &&
+            typeof body === "object" &&
+            key in (body as Record<string, unknown>)
+          ) {
+            const val = (body as Record<string, unknown>)[key];
+            return val === undefined || val === null ? undefined : String(val);
+          }
+          return undefined;
+        };
+
+        if (response.status === 403) {
+          const serverMsg =
+            readString("message") ??
+            "You have reached the limit of 3 file generations per day.";
+
+          // determine nextAvailable (ISO string preferred)
+          let nextAvailable: string | null = null;
+          const expiresAt = readString("expires_at");
+          const nextAvail = readString("next_available");
+          const retryAfter = readString("retry_after");
+
+          if (expiresAt) nextAvailable = expiresAt;
+          else if (nextAvail) nextAvailable = nextAvail;
+          else if (retryAfter) {
+            const secs = Number(retryAfter);
+            if (!Number.isNaN(secs)) {
+              nextAvailable = new Date(Date.now() + secs * 1000).toISOString();
+            }
+          } else {
+            nextAvailable = null;
+          }
+
+          setLimitInfo({ message: serverMsg, nextAvailable });
+          setShowLimitModal(true);
+          setIsGenerating(false);
+          return;
+        }
+
+        // other errors
+        const otherMsg = readString("message");
+        const genericMsg =
+          otherMsg ?? `Failed to generate project (${response.status})`;
+        throw new Error(genericMsg);
       }
 
       const result = await response.json();
-
-      // Assuming the result contains a 'project' object
       const manifestData = result.project;
-
-      // Update only the manifest without handling downloads
       setManifest(manifestData);
-
-      // Clean pending (if any)
       clearPending();
-
       setIsGenerating(false);
       setShowResult(true);
       setProgress(100);
       setCurrentStep(0);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error generating project:", err);
-      toast.error("Error generating project!");
+      const msg =
+        err instanceof Error ? err.message : "Error generating project!";
+      toast.error(msg);
       setIsGenerating(false);
     }
   };
@@ -630,6 +683,16 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Limit modal */}
+      <LimitModal
+        open={showLimitModal}
+        onClose={() => {
+          setShowLimitModal(false);
+          setLimitInfo(null);
+        }}
+        info={limitInfo}
+      />
 
       {/* Mobile floating generate */}
       <Card className="lg:hidden fixed bottom-0 left-0 right-0 z-50 py-4 px-6 bg-background">

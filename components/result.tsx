@@ -45,15 +45,26 @@ export default function ProjectReadyCard({
   };
 
   // Function to handle PDF download
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     const pdfUrl = manifest.pdf_url;
-    if (pdfUrl) {
+    if (!pdfUrl) return;
+
+    try {
+      const response = await fetch(pdfUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
       const a = document.createElement("a");
-      a.href = pdfUrl;
-      a.download = "project"; // You can specify the file name here
+      a.href = url;
+      a.download = "project.pdf"; // Specify file name
       document.body.appendChild(a);
       a.click();
       a.remove();
+
+      // Release memory
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download PDF:", err);
     }
   };
 

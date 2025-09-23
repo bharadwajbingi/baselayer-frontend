@@ -20,7 +20,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 import { SkeletonCard } from "@/components/skeletonLoad";
+
 type Features = Prisma.JsonValue;
+
 type Project = {
   id: string;
   stack: string;
@@ -30,6 +32,26 @@ type Project = {
   pdf_url: string;
   created_at: string;
   expires_at: string;
+};
+
+interface DeleteStatus {
+  canDelete: boolean;
+  remaining: string | null;
+}
+
+const getDeleteStatus = (createdAt: string): DeleteStatus => {
+  const created = new Date(createdAt).getTime();
+  const now = Date.now();
+  const diffMs = now - created;
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffHours >= 24) return { canDelete: true, remaining: null };
+
+  const remainingMs = 24 * 60 * 60 * 1000 - diffMs;
+  const hrs = Math.floor(remainingMs / (1000 * 60 * 60));
+  const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  return { canDelete: false, remaining: `${hrs}h ${mins}m` };
 };
 
 export default function ProjectsPage() {
@@ -45,18 +67,14 @@ export default function ProjectsPage() {
         const res = await fetch("/api/projects/list");
         const data = await res.json();
 
-        if (!res.ok) {
+        if (!res.ok)
           throw new Error(data.message || "Failed to fetch projects");
-        }
 
         setProjects(data.projects || []);
       } catch (err: unknown) {
         const message =
-          err instanceof Error
-            ? err.message
-            : "An error occurred while fetching projects.";
-
-        setError(message || "An error occurred while fetching projects.");
+          err instanceof Error ? err.message : "Error fetching projects";
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -64,7 +82,26 @@ export default function ProjectsPage() {
 
     fetchProjects();
   }, []);
+  const handleDownloadPdf = async (pdfUrl: string) => {
+    if (!pdfUrl) return;
 
+    try {
+      const response = await fetch(pdfUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "project.pdf"; // specify file name
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url); // free memory
+    } catch (err) {
+      console.error("Failed to download PDF:", err);
+    }
+  };
   const handleDelete = async (projectId: string) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this project? This action cannot be undone."
@@ -77,49 +114,37 @@ export default function ProjectsPage() {
       const res = await fetch(`/api/projects/get/${projectId}`, {
         method: "DELETE",
       });
-
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to delete project");
-      }
+      if (!res.ok) throw new Error(data.message || "Failed to delete project");
 
-      setProjects((prevProjects) =>
-        prevProjects.filter((project) => project.id !== projectId)
-      );
+      setProjects((prev) => prev.filter((p) => p.id !== projectId));
     } catch (err: unknown) {
       const message =
-        err instanceof Error
-          ? err.message
-          : "An error occurred while fetching projects.";
-
-      setError(message || "An error occurred while deleting the project.");
+        err instanceof Error ? err.message : "Error deleting project";
+      setError(message);
     } finally {
       setDeletingId(null);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
-  const isExpired = (expiresAt: string) => {
-    return new Date(expiresAt) < new Date();
-  };
+  const isExpired = (expiresAt: string) => new Date(expiresAt) < new Date();
 
-  if (loading) {
+  if (loading)
     return (
       <>
         <Navbar showAuth={true} />
         <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-center lg:justify-start lg:pt-32 min-h-screen">
-            {/* Skeleton Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
               {Array.from({ length: 9 }).map((_, idx) => (
                 <SkeletonCard key={idx} />
@@ -129,9 +154,8 @@ export default function ProjectsPage() {
         </div>
       </>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <>
         <Navbar showAuth={true} />
@@ -159,14 +183,12 @@ export default function ProjectsPage() {
         </div>
       </>
     );
-  }
 
   return (
     <>
       <Navbar showAuth={true} />
       <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Header Section */}
           <div className="mb-12">
             <h1 className="text-4xl font-bold tracking-tight mb-4">
               Codebases
@@ -197,110 +219,119 @@ export default function ProjectsPage() {
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => (
-                <Card
-                  key={project.id}
-                  className={cn(
-                    "group y",
-                    isExpired(project.expires_at) && "border-destructive/50"
-                  )}
-                >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <CardTitle className="text-xl flex items-center space-x-2">
-                          <Package className="h-5 w-5" />
-                          <span>{project.stack}</span>
-                        </CardTitle>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="secondary">{project.version}</Badge>
-                          {isExpired(project.expires_at) && (
-                            <Badge
-                              variant="destructive"
-                              className="flex items-center space-x-1"
-                            >
-                              <Clock className="h-3 w-3" />
-                              <span>Expired</span>
-                            </Badge>
-                          )}
+              {projects.map((project) => {
+                const { canDelete, remaining } = getDeleteStatus(
+                  project.created_at
+                );
+
+                return (
+                  <Card
+                    key={project.id}
+                    className={cn(
+                      "group y",
+                      isExpired(project.expires_at) && "border-destructive/50"
+                    )}
+                  >
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <CardTitle className="text-xl flex items-center space-x-2">
+                            <Package className="h-5 w-5" />
+                            <span>{project.stack}</span>
+                          </CardTitle>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="secondary">{project.version}</Badge>
+                            {isExpired(project.expires_at) && (
+                              <Badge
+                                variant="destructive"
+                                className="flex items-center space-x-1"
+                              >
+                                <Clock className="h-3 w-3" />
+                                <span>Expired</span>
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardHeader>
+                    </CardHeader>
 
-                  <CardContent className="space-y-4">
-                    {/* Features */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">
-                        Features
-                      </h4>
-                      <div className="bg-muted/50 p-3 rounded-lg">
-                        <code className="text-xs font-mono">
-                          {JSON.stringify(project.features, null, 2)}
-                        </code>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+                          Features
+                        </h4>
+                        <div className="bg-muted/50 p-3 rounded-lg">
+                          <code className="text-xs font-mono">
+                            {JSON.stringify(project.features, null, 2)}
+                          </code>
+                        </div>
                       </div>
-                    </div>
 
-                    <Separator />
+                      <Separator />
 
-                    {/* Dates */}
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center space-x-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>Created: {formatDate(project.created_at)}</span>
-                      </div>
-                      {project.expires_at && (
+                      <div className="space-y-2 text-sm">
                         <div className="flex items-center space-x-2 text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>Expires: {formatDate(project.expires_at)}</span>
+                          <Calendar className="h-4 w-4" />
+                          <span>Created: {formatDate(project.created_at)}</span>
                         </div>
-                      )}
-                    </div>
+                        {project.expires_at && (
+                          <div className="flex items-center space-x-2 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            <span>
+                              Expires: {formatDate(project.expires_at)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-                    <Separator />
+                      <Separator />
 
-                    {/* Actions */}
-                    <div className="flex items-center space-x-2">
-                      <Button asChild size="sm" className="flex-1">
-                        <a
-                          href={project.zip_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center space-x-2"
-                        >
-                          <Download className="h-4 w-4" />
-                          <span>Download</span>
-                        </a>
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button asChild size="sm" className="flex-1">
+                          <a
+                            href={project.zip_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            <span>Download</span>
+                          </a>
+                        </Button>
 
-                      <Button asChild variant="outline" size="sm">
-                        <a
-                          href={project.pdf_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadPdf(project.pdf_url)}
                           className="flex items-center space-x-2"
                         >
                           <FileText className="h-4 w-4" />
-                        </a>
-                      </Button>
+                        </Button>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(project.id)}
-                        disabled={deletingId === project.id}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        {deletingId === project.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        {/* Delete button with 24h restriction */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(project.id)}
+                          disabled={deletingId === project.id || !canDelete}
+                          className="text-destructive hover:text-destructive flex items-center space-x-1"
+                        >
+                          {deletingId === project.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          {!canDelete && remaining && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              Delete in {remaining}
+                            </span>
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

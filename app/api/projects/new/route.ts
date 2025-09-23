@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
-import { Prisma } from "@prisma/client"; // ✅ correct
-import prisma from "@/lib/prisma"; // your client instance
-
+import { Prisma } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import fetch from "node-fetch";
 import crypto from "crypto";
 
@@ -20,7 +19,6 @@ function stableStringify(obj: unknown): string {
         ":" +
         stableStringify((obj as Record<string, unknown>)[k])
     )
-
     .join(",")}}`;
 }
 
@@ -59,6 +57,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
+      );
+    }
+
+    // Check how many projects user has created in the last 24 hours
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1); // 24 hours ago
+
+    const projectCount = await prisma.project.count({
+      where: {
+        users: {
+          some: {
+            user_id: userId,
+          },
+        },
+        created_at: {
+          gte: oneDayAgo,
+        },
+      },
+    });
+
+    const maxFilesPerDay = 3;
+    if (projectCount >= maxFilesPerDay) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "You have reached the limit of 3 file generations per day.",
+        },
+        { status: 403 }
       );
     }
 
