@@ -58,16 +58,16 @@ export default function ProjectReadyCard({
   };
 
   return (
-    <div className="lg:fixed">
-      <div className="w-full px-4 sm:mt-5 sm:pt-0 pt-10">
+    <div className="lg:fixed ">
+      <div className="w-full px-4 sm:mt-5 sm:pt-0 pt-10  md:translate-y-[130px]">
         <Card className="mx-auto rounded-none  p-2 rounded-lg sm:h-auto border-0 shadow-lg">
           <CardHeader>
             <div className="flex items-start justify-between w-full gap-4">
               <div>
-                <CardTitle>Project Ready</CardTitle>
+                <CardTitle>Starter kit</CardTitle>
                 <CardDescription className="mt-2">
-                  Your project has been generated. Download it below or generate
-                  a new one.
+                  Your codebase has been generated. Download it below or
+                  generate a new one.
                 </CardDescription>
               </div>
 
@@ -135,12 +135,12 @@ export default function ProjectReadyCard({
               </div>
 
               {/* Manifest */}
-              <div className="mb-6 hidden sm:block">
+              {/* <div className="mb-6 hidden sm:block">
                 <p className="font-medium">Manifest</p>
                 <pre className="text-sm bg-muted p-3 rounded mt-2 overflow-auto max-h-48">
                   {JSON.stringify(manifest, null, 2)}
                 </pre>
-              </div>
+              </div> */}
             </div>
 
             {/* Always visible: buttons */}

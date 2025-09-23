@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
+import { SkeletonCard } from "@/components/skeletonLoad";
 type Features = Prisma.JsonValue;
 type Project = {
   id: string;
@@ -117,14 +118,12 @@ export default function ProjectsPage() {
       <>
         <Navbar showAuth={true} />
         <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="flex flex-col items-center space-y-4">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <p className="text-lg text-muted-foreground">
-                  Loading your projects...
-                </p>
-              </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-center lg:justify-start lg:pt-32 min-h-screen">
+            {/* Skeleton Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+              {Array.from({ length: 9 }).map((_, idx) => (
+                <SkeletonCard key={idx} />
+              ))}
             </div>
           </div>
         </div>
@@ -170,7 +169,7 @@ export default function ProjectsPage() {
           {/* Header Section */}
           <div className="mb-12">
             <h1 className="text-4xl font-bold tracking-tight mb-4">
-              Your Projects
+              Codebases
             </h1>
             <p className="text-xl text-muted-foreground">
               Manage and access all your generated boilerplate projects
@@ -189,8 +188,8 @@ export default function ProjectsPage() {
                     <p className="text-muted-foreground mb-6">
                       Generate your first project to see it here
                     </p>
-                    <Button onClick={() => router.push("/")}>
-                      Create Your First Project
+                    <Button onClick={() => router.push("/dashboard")}>
+                      Get your first codebase
                     </Button>
                   </div>
                 </div>

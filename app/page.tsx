@@ -93,7 +93,9 @@ export default function Home() {
                 </Link>
               </Button>
               <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                View Examples
+                <Link href="/projects" className="flex items-center gap-2">
+                  Project Stash
+                </Link>
               </Button>
             </div>
 

@@ -485,8 +485,7 @@ export default function Dashboard() {
         <Navbar showAuth={true} />
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading...</p>
+            <span className="loading loading-ring loading-xl"></span>
           </div>
         </div>
       </div>
@@ -591,7 +590,7 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
                   {availableFeatures.map((feature) => (
                     <FeatureCard
                       key={feature.id}
