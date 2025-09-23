@@ -343,28 +343,7 @@ export default function Dashboard() {
         features: genFeatures,
       };
 
-      // Simulate progress
-      const generationDuration = 5000;
-      const stepDuration = generationDuration / generationSteps.length;
-
-      for (let i = 0; i < generationSteps.length; i++) {
-        setCurrentStep(i);
-
-        const stepStart = (i / generationSteps.length) * 100;
-        const stepEnd = ((i + 1) / generationSteps.length) * 100;
-
-        const stepInterval = setInterval(() => {
-          setProgress((prev) => {
-            if (prev < stepEnd) return prev + 1;
-            clearInterval(stepInterval);
-            return prev;
-          });
-        }, Math.max(10, stepDuration / Math.max(1, stepEnd - stepStart)));
-
-        await new Promise((resolve) => setTimeout(resolve, stepDuration));
-      }
-
-      // Make API call to generate the project
+      // Make API call immediately
       const response = await fetch("/api/projects/new", {
         method: "POST",
         headers: {
