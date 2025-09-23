@@ -10,6 +10,11 @@ import {
 } from "@/components/ui/card";
 
 type Feature = { id: string; title: string; category?: string };
+type Manifest = {
+  zip_url?: string;
+  pdf_url?: string;
+  [key: string]: unknown; // allow other optional fields
+};
 
 export default function ProjectReadyCard({
   stack,
@@ -17,44 +22,39 @@ export default function ProjectReadyCard({
   selectedFeatures = [],
   availableFeatures = [],
   manifest = {},
-  downloadUrl = "",
   handleBackToDashboard = () => {},
-  handleDownloadClick = () => {},
 }: {
   stack: string;
   version: string;
   selectedFeatures: string[];
   availableFeatures: Feature[];
-  manifest: unknown;
-  downloadUrl?: string | null;
+  manifest: Manifest;
   handleBackToDashboard?: () => void;
-  handleDownloadClick?: () => void;
 }) {
-  const handleDownloadDocs = () => {
-    const featuresList = selectedFeatures
-      .map((id) => {
-        const f = availableFeatures.find((x) => x.id === id);
-        return `- ${f?.title ?? id} ${f?.category ? `(${f.category})` : ""}`;
-      })
-      .join("\n");
+  // Function to handle ZIP download
+  const handleDownloadZip = () => {
+    const zipUrl = manifest.zip_url;
+    if (zipUrl) {
+      const a = document.createElement("a");
+      a.href = zipUrl;
+      a.download = "project"; // You can specify the file name here
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  };
 
-    const docs = `Project Mini Documentation\n\nStack: ${stack}\nVersion: ${version}\nSelected features (${
-      selectedFeatures.length
-    }):\n${featuresList || "- None"}\n\nManifest:\n${JSON.stringify(
-      manifest,
-      null,
-      2
-    )}\n\nGenerated on: ${new Date().toISOString()}\n`;
-
-    const blob = new Blob([docs], { type: "text/plain" }); // plain text mini-doc
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `project-docs.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  // Function to handle PDF download
+  const handleDownloadPdf = () => {
+    const pdfUrl = manifest.pdf_url;
+    if (pdfUrl) {
+      const a = document.createElement("a");
+      a.href = pdfUrl;
+      a.download = "project"; // You can specify the file name here
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
   };
 
   return (
@@ -147,8 +147,7 @@ export default function ProjectReadyCard({
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-3 sm:space-y-0 mt-6 mb-12">
               {/* Download Codebase */}
               <button
-                onClick={handleDownloadClick}
-                disabled={!downloadUrl}
+                onClick={handleDownloadZip}
                 aria-label="Download codebase (zip)"
                 className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border shadow-md
                bg-white hover:bg-gray-50 transition-colors text-slate-900 font-semibold
@@ -183,7 +182,7 @@ export default function ProjectReadyCard({
 
               {/* Download Docs */}
               <button
-                onClick={handleDownloadDocs}
+                onClick={handleDownloadPdf}
                 aria-label="Download documentation (PDF)"
                 className="inline-flex items-center gap-3 px-5 py-3 rounded-lg border shadow-md
                bg-white hover:bg-gray-50 transition-colors text-slate-900 font-semibold

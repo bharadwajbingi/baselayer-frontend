@@ -52,6 +52,7 @@ import { Navbar } from "@/components/navbar";
 import { FeatureCard } from "@/components/feature-card";
 import { GenerateButton } from "@/components/generate-button";
 import ProjectReadyCard from "@/components/result";
+import { Manifest } from "next/dist/lib/metadata/types/manifest-types";
 
 /**
  * STORAGE KEYS
@@ -268,8 +269,8 @@ export default function Dashboard() {
 
   // results
   const [showResult, setShowResult] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-  const [downloadFileName, setDownloadFileName] = useState<string>("test.txt");
+  // const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  // const [downloadFileName, setDownloadFileName] = useState<string>("test.txt");
   const [manifest, setManifest] = useState<unknown | null>(null);
 
   const pendingResumeRef = useRef(false);
@@ -317,7 +318,6 @@ export default function Dashboard() {
     } catch {}
   };
 
-  // core generation routine (used for initial start and resume)
   const startGeneration = async (payload?: {
     stack?: string;
     version?: string;
@@ -338,14 +338,9 @@ export default function Dashboard() {
 
     try {
       const data = {
-        zipUrl: "/dummy/project.zip",
-        manifest: {
-          id: "demo-123",
-          stack: genStack,
-          version: genVersion,
-          features: genFeatures,
-          summary: "Demo project boilerplate generated for preview.",
-        },
+        stack: genStack,
+        version: genVersion,
+        features: genFeatures,
       };
 
       // Simulate progress
@@ -369,18 +364,28 @@ export default function Dashboard() {
         await new Promise((resolve) => setTimeout(resolve, stepDuration));
       }
 
-      // Download the dummy zip (must exist in public/)
-      const fileResponse = await fetch(data.zipUrl);
-      const blob = await fileResponse.blob();
-      const objectUrl = window.URL.createObjectURL(blob);
+      // Make API call to generate the project
+      const response = await fetch("/api/projects/new", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-      setDownloadUrl(objectUrl);
-      setDownloadFileName(
-        (data.zipUrl && data.zipUrl.split("/").pop()) || "project.zip"
-      );
-      setManifest(data.manifest);
+      if (!response.ok) {
+        throw new Error("Failed to generate project");
+      }
 
-      // clean pending (if any)
+      const result = await response.json();
+
+      // Assuming the result contains a 'project' object
+      const manifestData = result.project;
+
+      // Update only the manifest without handling downloads
+      setManifest(manifestData);
+
+      // Clean pending (if any)
       clearPending();
 
       setIsGenerating(false);
@@ -466,26 +471,26 @@ export default function Dashboard() {
     prevPathRef.current = pathname;
   }, [pathname]);
 
-  // Download helper
-  const handleDownloadClick = () => {
-    if (!downloadUrl) return;
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = downloadFileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    toast.success("Download started");
-  };
+  // // Download helper
+  // const handleDownloadClick = () => {
+  //   if (!downloadUrl) return;
+  //   const a = document.createElement("a");
+  //   a.href = downloadUrl;
+  //   a.download = downloadFileName;
+  //   document.body.appendChild(a);
+  //   a.click();
+  //   a.remove();
+  //   toast.success("Download started");
+  // };
 
   // Back to dashboard (keep selections cleared or not depending on your preference)
   // You asked that going back to home resets; here Back just returns to selection state (not clearing unless
   // they actually navigated to home).
   const handleBackToDashboard = () => {
-    if (downloadUrl) {
-      window.URL.revokeObjectURL(downloadUrl);
-      setDownloadUrl(null);
-    }
+    // if (downloadUrl) {
+    //   window.URL.revokeObjectURL(downloadUrl);
+    //   setDownloadUrl(null);
+    // }
     setShowResult(false);
     setIsGenerating(false);
     setProgress(0);
@@ -494,13 +499,6 @@ export default function Dashboard() {
     // do NOT clear selectedFeatures here so user can tweak; the requirement
     // was only to start fresh when they go to Home.
   };
-
-  // Cleanup blob URL on unmount
-  useEffect(() => {
-    return () => {
-      if (downloadUrl) window.URL.revokeObjectURL(downloadUrl);
-    };
-  }, [downloadUrl]);
 
   if (!isLoaded) {
     return (
@@ -646,10 +644,8 @@ export default function Dashboard() {
                   version="1.0.0"
                   selectedFeatures={selectedFeatures}
                   availableFeatures={availableFeatures}
-                  manifest={manifest}
-                  downloadUrl={downloadUrl}
+                  manifest={manifest as Manifest}
                   handleBackToDashboard={handleBackToDashboard}
-                  handleDownloadClick={handleDownloadClick}
                 />
               </div>
             )}

@@ -1,0 +1,34 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  config_hash String   @unique
+  stack       String
+  version     String
+  features    Json?
+  zip_url     String
+  pdf_url     String
+  created_at  DateTime @default(now())
+  expires_at  DateTime @default(dbgenerated("now() + interval '7 days'"))
+  users UserProject[]
+}
+
+model UserProject {
+  id         String   @id @default(uuid())
+  user_id    String
+  project_id String
+  created_at DateTime @default(now())
+
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@unique([user_id, project_id])
+}
