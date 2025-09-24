@@ -1,45 +1,5 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import prisma from "@/lib/prisma";
-
-// export async function DELETE(req: NextRequest) {
-//   // parse id from the request URL to avoid Next.js param-type mismatches
-//   const url = new URL(req.url);
-//   const parts = url.pathname.split("/").filter(Boolean);
-//   const id = parts[parts.length - 1]; // last segment is the [id]
-
-//   if (!id) {
-//     return NextResponse.json(
-//       { success: false, message: "Missing id" },
-//       { status: 400 }
-//     );
-//   }
-
-//   try {
-//     const project = await prisma.project.findUnique({ where: { id } });
-//     if (!project) {
-//       return NextResponse.json(
-//         { success: false, message: "Project not found" },
-//         { status: 404 }
-//       );
-//     }
-
-//     await prisma.project.delete({ where: { id } });
-//     return NextResponse.json({
-//       success: true,
-//       message: "Project deleted successfully",
-//     });
-//   } catch (error: unknown) {
-//     const message = error instanceof Error ? error.message : "Server error";
-//     return NextResponse.json({ success: false, message }, { status: 500 });
-//   }
-// }
-
-// app/api/projects/[id]/route.test('should
-//
-
-// app/api/projects/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { supabase } from "@/lib/supabaseClient";
 
 export async function DELETE(req: NextRequest) {
   const url = new URL(req.url);
@@ -54,10 +14,22 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    // Find the project
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-    });
+    // Fetch the project
+    const { data: project, error: fetchError } = await supabase
+      .from("Project")
+      .select("*")
+      .eq("id", projectId)
+      .single();
+
+    if (fetchError) {
+      if (fetchError.code === "PGRST116") {
+        return NextResponse.json(
+          { success: false, message: "Project not found" },
+          { status: 404 }
+        );
+      }
+      throw fetchError;
+    }
 
     if (!project) {
       return NextResponse.json(
@@ -66,8 +38,8 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // 24-hour restriction based on created_at
-    const created = project.created_at.getTime();
+    // 24-hour restriction
+    const created = new Date(project.created_at).getTime();
     const now = Date.now();
     const diffMs = now - created;
 
@@ -84,10 +56,13 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Delete the project (or user-project relation if per-user)
-    await prisma.project.delete({
-      where: { id: projectId },
-    });
+    // Delete the project
+    const { error: deleteError } = await supabase
+      .from("Project")
+      .delete()
+      .eq("id", projectId);
+
+    if (deleteError) throw deleteError;
 
     return NextResponse.json({
       success: true,

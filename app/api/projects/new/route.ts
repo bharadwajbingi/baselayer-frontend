@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
-import { Prisma } from "@prisma/client";
-import prisma from "@/lib/prisma";
+import { supabase } from "@/lib/supabaseClient";
 import fetch from "node-fetch";
 import crypto from "crypto";
+import { v4 as uuidv4 } from "uuid";
 
-// Prisma-compatible Features type
-type Features = Prisma.InputJsonValue;
+const newProjectId = uuidv4();
+// Features type
+type Features = Record<string, unknown>;
 
 function stableStringify(obj: unknown): string {
   if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
@@ -60,34 +61,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check how many projects user has created in the last 24 hours
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1); // 24 hours ago
-
-    const projectCount = await prisma.project.count({
-      where: {
-        users: {
-          some: {
-            user_id: userId,
-          },
-        },
-        created_at: {
-          gte: oneDayAgo,
-        },
-      },
-    });
-
-    const maxFilesPerDay = 3;
-    if (projectCount >= maxFilesPerDay) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "You have reached the limit of 3 file generations per day.",
-        },
-        { status: 403 }
-      );
-    }
-
     const body = (await req.json()) as {
       stack?: string;
       version?: string;
@@ -105,25 +78,53 @@ export async function POST(req: NextRequest) {
     const config_hash = generateConfigHash(stack, version, features);
     console.log("computed config_hash:", config_hash);
 
-    const existing = await prisma.project.findUnique({
-      where: { config_hash },
-    });
+    // Check how many projects user created in last 24h
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-    if (existing) {
-      console.log("✅ Project already exists:", existing.id);
-      try {
-        await prisma.userProject.create({
-          data: { user_id: userId, project_id: existing.id },
-        });
-      } catch (error: unknown) {
-        if ((error as { code?: string }).code === "P2002") {
-          console.log("userProject link already exists; ignoring");
-        } else {
-          console.warn("warning while linking userProject:", error);
-        }
-      }
+    const { data: recentUserProjects, error: recentError } = await supabase
+      .from("UserProject")
+      .select("id")
+      .eq("user_id", userId)
+      .gte("created_at", oneDayAgo.toISOString());
+
+    if (recentError) throw recentError;
+
+    const maxFilesPerDay = 3;
+    if ((recentUserProjects?.length ?? 0) >= maxFilesPerDay) {
       return NextResponse.json(
-        { success: true, project: existing },
+        {
+          success: false,
+          message: "You have reached the limit of 3 file generations per day.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Check if project with same config_hash exists
+    const { data: existingProjects, error: existingError } = await supabase
+      .from("Project")
+      .select("*")
+      .eq("config_hash", config_hash)
+      .limit(1)
+      .single();
+
+    if (existingError && existingError.code !== "PGRST116") throw existingError;
+
+    if (existingProjects) {
+      console.log("✅ Project already exists:", existingProjects.id);
+
+      // Link user to existing project
+      const { error: linkError } = await supabase
+        .from("UserProject")
+        .insert([{ user_id: userId, project_id: existingProjects.id }]);
+
+      if (linkError && linkError.code !== "23505") {
+        console.warn("warning while linking userProject:", linkError);
+      }
+
+      return NextResponse.json(
+        { success: true, project: existingProjects },
         { status: 200 }
       );
     }
@@ -162,41 +163,36 @@ export async function POST(req: NextRequest) {
     const zip_url = result.project.zip_url ?? "";
     const pdf_url = result.project.pdf_url ?? "";
 
-    if (!zip_url || !pdf_url) {
-      console.warn("Backend did not return file URLs. URLs may be empty.");
-    }
+    // Upsert project
 
-    const upsertedProject = await prisma.project.upsert({
-      where: { config_hash },
-      update: {
-        zip_url,
-        pdf_url,
-        stack: result.project.stack ?? stack,
-        version: result.project.version ?? version,
-        features: result.project.features ?? features,
-      },
-      create: {
-        config_hash,
-        stack: result.project.stack ?? stack,
-        version: result.project.version ?? version,
-        features: result.project.features ?? features,
-        zip_url,
-        pdf_url,
-      },
-    });
+    // Remove comment and ensure upsert is like this:
+    const { data: upsertedProject, error: upsertError } = await supabase
+      .from("Project")
+      .upsert(
+        [
+          {
+            id: newProjectId, // Add this line if you're generating a new ID
+            config_hash,
+            stack: result.project.stack ?? stack,
+            version: result.project.version ?? version,
+            features: result.project.features ?? features,
+            zip_url,
+            pdf_url,
+          },
+        ],
+        { onConflict: "config_hash" }
+      )
+      .select()
+      .single();
 
-    console.log("✅ Project upserted:", upsertedProject.id);
+    if (upsertError) throw upsertError;
 
-    try {
-      await prisma.userProject.create({
-        data: { user_id: userId, project_id: upsertedProject.id },
-      });
-    } catch (error: unknown) {
-      if ((error as { code?: string }).code === "P2002") {
-        console.log("userProject link already exists; ignoring");
-      } else {
-        console.warn("warning while linking userProject:", error);
-      }
+    // Link user to new project
+    const { error: linkNewError } = await supabase
+      .from("UserProject")
+      .insert([{ user_id: userId, project_id: upsertedProject.id }]);
+    if (linkNewError && linkNewError.code !== "23505") {
+      console.warn("warning while linking userProject:", linkNewError);
     }
 
     return NextResponse.json(

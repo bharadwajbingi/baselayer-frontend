@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
-import prisma from "@/lib/prisma";
+import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(req: NextRequest) {
   console.log("➡️ Incoming GET /api/projects/user");
@@ -14,22 +14,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const userProjects = await prisma.userProject.findMany({
-      where: { user_id: userId },
-      include: {
-        project: true,
-      },
-    });
+    // Fetch all UserProject rows for this user and include project details
+    const { data: userProjects, error } = await supabase
+      .from("UserProject")
+      .select("project:Project(*)")
+      .eq("user_id", userId);
 
-    const projects = userProjects.map((userProject) => userProject.project);
+    if (error) throw error;
+
+    // Extract the projects
+    const projects = userProjects?.map((up) => up.project) ?? [];
 
     return NextResponse.json({ success: true, projects }, { status: 200 });
   } catch (error: unknown) {
     console.error("💥 Unexpected error in /api/projects/user:", error);
-
-    // Narrow the error type safely
     const message = error instanceof Error ? error.message : "Server error";
-
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
 }
