@@ -5,9 +5,6 @@ import fetch from "node-fetch";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
-const newProjectId = uuidv4();
-const userProjectId = uuidv4(); // Generate a new UUID for the 'id' field
-
 // Features type
 type Features = Record<string, unknown>;
 
@@ -80,7 +77,7 @@ export async function POST(req: NextRequest) {
     const config_hash = generateConfigHash(stack, version, features);
     console.log("computed config_hash:", config_hash);
 
-    // Check how many projects user created in last 24h
+    // Check how many projects user created in the last 24h
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
@@ -117,13 +114,15 @@ export async function POST(req: NextRequest) {
       console.log("✅ Project already exists:", existingProjects.id);
 
       // Link user to existing project
+      const userProjectId = uuidv4(); // Generate a new UUID for the 'id' in UserProject
+
       const { error: linkNewError } = await supabase
         .from("UserProject")
         .insert([
           {
-            id: userProjectId, // Explicitly set the 'id' for UserProject
+            id: userProjectId, // Provide UUID for UserProject
             user_id: userId,
-            project_id: existingProjects.id, // Use the existing project ID
+            project_id: existingProjects.id,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -172,13 +171,15 @@ export async function POST(req: NextRequest) {
     const zip_url = result.project.zip_url ?? "";
     const pdf_url = result.project.pdf_url ?? "";
 
+    const newProjectId = uuidv4(); // New UUID for the 'id' in Project
+
     // Upsert project
     const { data: upsertedProject, error: upsertError } = await supabase
       .from("Project")
       .upsert(
         [
           {
-            id: newProjectId, // Add this line if you're generating a new ID
+            id: newProjectId, // Provide generated UUID here
             config_hash,
             stack: result.project.stack ?? stack,
             version: result.project.version ?? version,
@@ -195,11 +196,16 @@ export async function POST(req: NextRequest) {
     if (upsertError) throw upsertError;
 
     // Now that upsertedProject is available, link user to the new project
-    const { error: linkNewError } = await supabase
-      .from("UserProject")
-      .insert([
-        { user_id: userId, project_id: upsertedProject.id, id: userProjectId },
-      ]);
+    const userProjectId = uuidv4(); // Generate a new UUID for the 'id' in UserProject
+
+    const { error: linkNewError } = await supabase.from("UserProject").insert([
+      {
+        id: userProjectId, // UUID for UserProject
+        user_id: userId,
+        project_id: upsertedProject.id,
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
     if (linkNewError && linkNewError.code !== "23505") {
       console.warn("warning while linking userProject:", linkNewError);
