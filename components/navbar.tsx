@@ -88,7 +88,15 @@ export function Navbar({ showAuth = false }: NavbarProps) {
                 </SignedOut>
 
                 <SignedIn>
-                  <div className="flex justify-center">
+                  <div className="flex ">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="w-full mr-6"
+                    >
+                      <Link href="/projects">Projects</Link>
+                    </Button>
                     <UserButton afterSignOutUrl="/" />
                   </div>
                 </SignedIn>
