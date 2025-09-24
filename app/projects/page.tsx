@@ -144,7 +144,7 @@ export default function ProjectsPage() {
       <>
         <Navbar showAuth={true} />
         <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-center lg:justify-start lg:pt-32 min-h-screen">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col justify-center lg:justify-start lg:pt-10 min-h-screen">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
               {Array.from({ length: 9 }).map((_, idx) => (
                 <SkeletonCard key={idx} />
