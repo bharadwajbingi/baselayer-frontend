@@ -6,6 +6,8 @@ import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 
 const newProjectId = uuidv4();
+const userProjectId = uuidv4(); // Generate a new UUID for the 'id' field
+
 // Features type
 type Features = Record<string, unknown>;
 
@@ -115,12 +117,19 @@ export async function POST(req: NextRequest) {
       console.log("✅ Project already exists:", existingProjects.id);
 
       // Link user to existing project
-      const { error: linkError } = await supabase
+      const { error: linkNewError } = await supabase
         .from("UserProject")
-        .insert([{ user_id: userId, project_id: existingProjects.id }]);
+        .insert([
+          {
+            id: userProjectId, // Explicitly set the 'id' for UserProject
+            user_id: userId,
+            project_id: existingProjects.id, // Use the existing project ID
+            created_at: new Date().toISOString(),
+          },
+        ]);
 
-      if (linkError && linkError.code !== "23505") {
-        console.warn("warning while linking userProject:", linkError);
+      if (linkNewError && linkNewError.code !== "23505") {
+        console.warn("warning while linking userProject:", linkNewError);
       }
 
       return NextResponse.json(
@@ -164,8 +173,6 @@ export async function POST(req: NextRequest) {
     const pdf_url = result.project.pdf_url ?? "";
 
     // Upsert project
-
-    // Remove comment and ensure upsert is like this:
     const { data: upsertedProject, error: upsertError } = await supabase
       .from("Project")
       .upsert(
@@ -187,10 +194,13 @@ export async function POST(req: NextRequest) {
 
     if (upsertError) throw upsertError;
 
-    // Link user to new project
+    // Now that upsertedProject is available, link user to the new project
     const { error: linkNewError } = await supabase
       .from("UserProject")
-      .insert([{ user_id: userId, project_id: upsertedProject.id }]);
+      .insert([
+        { user_id: userId, project_id: upsertedProject.id, id: userProjectId },
+      ]);
+
     if (linkNewError && linkNewError.code !== "23505") {
       console.warn("warning while linking userProject:", linkNewError);
     }
