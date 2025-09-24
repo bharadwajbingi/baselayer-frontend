@@ -37,6 +37,14 @@ export function Navbar({ showAuth = false }: NavbarProps) {
                 </SignedOut>
 
                 <SignedIn>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <Link href="/projects">Projects</Link>
+                  </Button>
                   <UserButton afterSignOutUrl="/" />
                 </SignedIn>
               </>
