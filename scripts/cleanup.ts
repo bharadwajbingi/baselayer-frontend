@@ -1,7 +1,4 @@
-import { PrismaClient } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
-
-const prisma = new PrismaClient();
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,11 +8,16 @@ const supabase = createClient(
 async function cleanupProjects() {
   console.log("🧹 Starting cleanup...");
 
-  const orphanedProjects = await prisma.project.findMany({
-    where: {
-      users: { none: {} }, // no linked users
-    },
-  });
+  // Fetch orphaned projects (projects with no users linked)
+  const { data: orphanedProjects, error: fetchError } = await supabase
+    .from("projects") // Table name
+    .select("*")
+    .is("user_id", null); // Check if user_id is null or has no links to users
+
+  if (fetchError) {
+    console.error("❌ Error fetching orphaned projects:", fetchError.message);
+    process.exit(1);
+  }
 
   for (const project of orphanedProjects) {
     console.log(`Deleting project ${project.id}`);
@@ -24,14 +26,29 @@ async function cleanupProjects() {
     if (project.zip_url) filesToDelete.push(project.zip_url.split("/").pop()!);
     if (project.pdf_url) filesToDelete.push(project.pdf_url.split("/").pop()!);
 
+    // Delete project files from Supabase Storage
     if (filesToDelete.length > 0) {
-      const { error } = await supabase.storage
-        .from("projects")
+      const { error: deleteError } = await supabase.storage
+        .from("projects") // Storage bucket name
         .remove(filesToDelete);
-      if (error) console.error("❌ Supabase delete error:", error.message);
+
+      if (deleteError) {
+        console.error("❌ Supabase delete error:", deleteError.message);
+      }
     }
 
-    await prisma.project.delete({ where: { id: project.id } });
+    // Delete the project record from Supabase (no Prisma involved)
+    const { error: deleteProjectError } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", project.id);
+
+    if (deleteProjectError) {
+      console.error(
+        `❌ Error deleting project ${project.id}:`,
+        deleteProjectError.message
+      );
+    }
   }
 
   console.log("✅ Cleanup done");
